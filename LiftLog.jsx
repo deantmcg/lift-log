@@ -660,22 +660,21 @@ const css = `
 `;
 
 // ── Rest Timer ────────────────────────────────────────────────────────────────
-function RestTimer({ onClose }) {
-  const [total, setTotal] = useState(90);
-  const [rem, setRem] = useState(90);
-  const [running, setRunning] = useState(true);
-  const ref = useRef(null);
+const fmtPreset = (s) => s === 120 ? "2 min" : s === 180 ? "3 min" : `${s}s`;
 
-  useEffect(() => { setRem(total); setRunning(true); }, [total]);
+function RestTimer({ endTime, total, onSetTotal, onClose, onSkip }) {
+  const [rem, setRem] = useState(() => Math.max(0, Math.ceil((endTime - Date.now()) / 1000)));
+  const tickRef = useRef(null);
 
   useEffect(() => {
-    if (!running) { clearInterval(ref.current); return; }
-    ref.current = setInterval(() => setRem(r => r <= 0 ? 0 : r - 1), 1000);
-    return () => clearInterval(ref.current);
-  }, [running, total]);
+    const tick = () => setRem(Math.max(0, Math.ceil((endTime - Date.now()) / 1000)));
+    tick();
+    tickRef.current = setInterval(tick, 500);
+    return () => clearInterval(tickRef.current);
+  }, [endTime]);
 
   const r = 76, circ = 2 * Math.PI * r;
-  const pct = rem / total;
+  const pct = total > 0 ? rem / total : 0;
   const offset = circ * (1 - pct);
   const urgent = rem <= 10 && rem > 0;
   const overtime = rem === 0;
@@ -697,12 +696,12 @@ function RestTimer({ onClose }) {
         {overtime && <div className="rest-done">▶ Next Set</div>}
         <div className="rest-presets">
           {REST_PRESETS.map(p => (
-            <button key={p} className={`rp-btn ${total===p?"active":""}`} onClick={() => setTotal(p)}>{p}s</button>
+            <button key={p} className={`rp-btn ${total===p?"active":""}`} onClick={() => onSetTotal(p)}>{fmtPreset(p)}</button>
           ))}
         </div>
         <div className="rest-btns">
           <button className="rb rb-close" onClick={onClose}>Close</button>
-          <button className="rb rb-skip" onClick={() => { setRunning(false); setRem(0); }}>
+          <button className="rb rb-skip" onClick={onSkip}>
             {overtime ? "Done" : "Skip"}
           </button>
         </div>
@@ -712,7 +711,7 @@ function RestTimer({ onClose }) {
 }
 
 // ── Exercise Card ─────────────────────────────────────────────────────────────
-function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest }) {
+function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest, restRem }) {
   const mc = MUSCLE_COLORS[entry.muscleGroup] || { bg:"#111", border:"#333", text:"#888" };
   const doneCt = entry.sets.filter(s => s.done).length;
 
@@ -776,7 +775,11 @@ function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest
                 <input className="sin w" type="number" min="0" step="2.5" value={set.weight} onChange={e=>upd(set.id,"weight",+e.target.value)} />
                 <span className="sunit">kg</span>
               </div>
-              {set.done && <button className="restbtn" onClick={()=>onStartRest()}>⏱ Rest</button>}
+              {set.done && (
+                <button className="restbtn" onClick={()=>onStartRest()}>
+                  {restRem != null && restRem > 0 ? `⏱ ${pad(Math.floor(restRem/60))}:${pad(restRem%60)}` : "⏱ Rest"}
+                </button>
+              )}
               <button className="rmbtn" onClick={()=>rmSet(set.id)}>−</button>
               <button className={`tickbtn ${set.done?"on":""}`} onClick={()=>tick(set.id)}>✓</button>
             </div>
@@ -972,7 +975,7 @@ function Home({ onStart, onExplore, onHistory, onMyTemplates, hasActiveSession, 
       </button>
       <div className="home-actions">
         <button className="homebtn" onClick={onHistory}>Past Sessions</button>
-        <button className="homebtn" onClick={onMyTemplates}>My Templates</button>
+        <button className="homebtn" onClick={onMyTemplates}>My Workouts</button>
         <button className="homebtn" onClick={onExplore}>Exercises</button>
       </div>
       {recent.length>0 && (
@@ -1253,7 +1256,7 @@ function TemplateEditorScreen({ allExercises, template, onSave, onBack }) {
   );
 }
 
-// ── My Templates Screen ───────────────────────────────────────────────────────
+// ── My Workouts Screen ───────────────────────────────────────────────────────
 function MyTemplatesScreen({ allExercises, onBack }) {
   const [templates, setTemplates] = useState([]);
   const [editing, setEditing] = useState(null); // null = list, false = new, obj = edit
@@ -1276,7 +1279,7 @@ function MyTemplatesScreen({ allExercises, onBack }) {
     <div className="xscreen">
       <div className="xhdr">
         <button className="backbtn" onClick={onBack}>← Back</button>
-        <span className="xtitle">My Templates</span>
+        <span className="xtitle">My Workouts</span>
       </div>
       <div className="xscroll">
         {templates.length === 0 ? (
@@ -1380,6 +1383,10 @@ export default function LiftLog() {
   const [showBrowser, setShowBrowser]   = useState(false);
   const [showCustom, setShowCustom]     = useState(false);
   const [showRest, setShowRest]         = useState(false);
+  const [restEndTime, setRestEndTime]   = useState(null);
+  const [restTotal, setRestTotal]       = useState(120);
+  const [restRem, setRestRem]           = useState(null);
+  const restTickRef                     = useRef(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [allExercises, setAllExercises] = useState([]);
   const [elapsed, setElapsed]           = useState(0);
@@ -1393,6 +1400,19 @@ export default function LiftLog() {
     } else clearInterval(timerRef.current);
     return () => clearInterval(timerRef.current);
   }, [screen, session]);
+
+  useEffect(() => {
+    clearInterval(restTickRef.current);
+    if (!restEndTime) { setRestRem(null); return; }
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((restEndTime - Date.now()) / 1000));
+      setRestRem(rem);
+      if (rem === 0) { clearInterval(restTickRef.current); setShowRest(true); }
+    };
+    tick();
+    restTickRef.current = setInterval(tick, 500);
+    return () => clearInterval(restTickRef.current);
+  }, [restEndTime]);
 
   const startSession = (template) => {
     const now = Date.now();
@@ -1418,11 +1438,21 @@ export default function LiftLog() {
   const updateExercise = (u)  => setExercises(p=>p.map(e=>e.entryId===u.entryId?u:e));
   const removeExercise = (id) => setExercises(p=>p.filter(e=>e.entryId!==id));
 
+  const handleRestButton = () => {
+    if (restEndTime && restRem > 0) {
+      setShowRest(true);
+    } else {
+      setRestEndTime(Date.now() + restTotal * 1000);
+      setShowRest(true);
+    }
+  };
+
   const finish = () => {
     const done = { ...session, exercises, endTime:Date.now() };
     storage.saveSession(done); setSession(done); setScreen("summary");
+    setRestEndTime(null); setShowRest(false);
   };
-  const discard = () => { setExercises([]); setSession(null); setScreen("home"); };
+  const discard = () => { setExercises([]); setSession(null); setScreen("home"); setRestEndTime(null); setShowRest(false); };
   const goHome  = () => setScreen("home");
 
   const addedIds = new Set(exercises.map(e=>e.exerciseId));
@@ -1473,7 +1503,7 @@ export default function LiftLog() {
             {exercises.map(entry=>(
               <ExCard key={entry.entryId} entry={entry} allExercises={allExercises}
                 onUpdate={updateExercise} onRemove={()=>removeExercise(entry.entryId)}
-                addedIds={addedIds} onStartRest={()=>setShowRest(true)} />
+                addedIds={addedIds} onStartRest={handleRestButton} restRem={restRem} />
             ))}
           </div>
           <div className="addwrap">
@@ -1507,7 +1537,15 @@ export default function LiftLog() {
             />
           </div>
         )}
-        {showRest && <RestTimer onClose={()=>setShowRest(false)} />}
+        {showRest && restEndTime && (
+          <RestTimer
+            endTime={restEndTime}
+            total={restTotal}
+            onSetTotal={(s) => { setRestTotal(s); setRestEndTime(Date.now() + s * 1000); }}
+            onClose={() => setShowRest(false)}
+            onSkip={() => { setRestEndTime(null); setShowRest(false); }}
+          />
+        )}
       </div>
     </>
   );
