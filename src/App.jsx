@@ -20,16 +20,16 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import './styles/index.css';
 
 export default function App() {
-  const [screen, setScreen]             = useState("home");
-  const [showBrowser, setShowBrowser]   = useState(false);
-  const [showCustom, setShowCustom]     = useState(false);
-  
-  const [showRest, setShowRest]         = useState(false);
-  const [restEndTime, setRestEndTime]   = useState(null);
-  const [restTotal, setRestTotal]       = useState(120);
-  const [settings, setSettings]         = useState(null);
+  const [screen, setScreen] = useState("home");
+  const [showBrowser, setShowBrowser] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
+
+  const [showRest, setShowRest] = useState(false);
+  const [restEndTime, setRestEndTime] = useState(null);
+  const [restTotal, setRestTotal] = useState(120);
+  const [settings, setSettings] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('ll_token'));
-  const [loading, setLoading]           = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const loadInitialData = () => {
     setLoading(true);
@@ -45,8 +45,8 @@ export default function App() {
   useEffect(() => {
     if (isAuthenticated) loadInitialData();
   }, [isAuthenticated]);
-  const [restRem, setRestRem]           = useState(null);
-  const restTickRef                     = useRef(null);
+  const [restRem, setRestRem] = useState(null);
+  const restTickRef = useRef(null);
 
   useEffect(() => {
     clearInterval(restTickRef.current);
@@ -82,94 +82,94 @@ export default function App() {
   const handleFinish = () => { finish(); setScreen("summary"); setRestEndTime(null); setShowRest(false); };
   const handleCancel = () => { cancel(); setScreen("home"); setRestEndTime(null); setShowRest(false); };
 
-  const addedIds = new Set(exercises.map(e=>e.exerciseId));
-  const doneSets = exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
+  const addedIds = new Set(exercises.map(e => e.exerciseId));
+  const doneSets = exercises.reduce((a, e) => a + e.sets.filter(s => s.done).length, 0);
   const hasActiveSession = session && !session.endTime;
 
   if (!isAuthenticated) return <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
-  if (loading) return <div className="app"><div className="empty" style={{marginTop:"50%"}}>Loading data...</div></div>;
+  if (loading) return <div className="app"><div className="empty" style={{ marginTop: "50%" }}>Loading data...</div></div>;
 
   return (
     <div className="app">
 
-      {screen==="session" && (
+      {screen === "session" && (
         <Topbar session={session} elapsed={elapsed} setSession={setSession} onHome={() => setScreen("home")} showTimer={settings.showTimer} />
       )}
 
-      {screen==="home" && (
+      {screen === "home" && (
         <Home
-          onStart={()=>setScreen("templateselect")}
-          onExplore={()=>setScreen("explore")}
-          onHistory={()=>setScreen("history")}
-          onMyTemplates={()=>setScreen("mytemplates")}
+          onStart={() => setScreen("templateselect")}
+          onExplore={() => setScreen("explore")}
+          onHistory={() => setScreen("history")}
+          onMyTemplates={() => setScreen("mytemplates")}
           hasActiveSession={hasActiveSession}
-          onResume={()=>setScreen("session")}
-          onSettings={()=>setScreen("settings")}
+          onResume={() => setScreen("session")}
+          onSettings={() => setScreen("settings")}
         />
       )}
 
-      {screen==="settings" && (
+      {screen === "settings" && (
         <SettingsScreen
           settings={settings}
           setSettings={setSettings}
-          onBack={()=>setScreen("home")}
+          onBack={() => setScreen("home")}
         />
       )}
-      
-      {screen==="templateselect" && (
+
+      {screen === "templateselect" && (
         <TemplateSelectScreen
           allExercises={allExercises}
           onStart={handleStart}
-          onBack={()=>setScreen("home")}
+          onBack={() => setScreen("home")}
         />
       )}
-      
-      {screen==="explore" && <ExploreScreen allExercises={allExercises} onBack={()=>setScreen("home")} />}
-      {screen==="history" && <HistoryScreen onBack={()=>setScreen("home")} />}
-      {screen==="mytemplates" && <MyTemplatesScreen allExercises={allExercises} onBack={()=>setScreen("home")} />}
-      {screen==="summary" && session && <Summary session={session} onNew={()=>{setScreen("home");}} />}
 
-      {screen==="session" && session && <>
+      {screen === "explore" && <ExploreScreen allExercises={allExercises} onBack={() => setScreen("home")} />}
+      {screen === "history" && <HistoryScreen onBack={() => setScreen("home")} />}
+      {screen === "mytemplates" && <MyTemplatesScreen allExercises={allExercises} onBack={() => setScreen("home")} />}
+      {screen === "summary" && session && <Summary session={session} onNew={() => { setScreen("home"); }} />}
+
+      {screen === "session" && session && <>
         <div className="exsec">
           <div className="secbar">
             <span className="seclbl">Exercises · {exercises.length}</span>
             <span className="secstat">{doneSets} sets done</span>
           </div>
-          {exercises.length===0 && (
+          {exercises.length === 0 && (
             <div className="empty"><div className="emico">💪</div><div className="emtxt">Add exercises to begin</div></div>
           )}
-          {exercises.map(entry=>(
+          {exercises.map(entry => (
             <ExerciseCard key={entry.entryId} entry={entry} allExercises={allExercises}
-              onUpdate={updateExercise} onRemove={()=>removeExercise(entry.entryId)}
+              onUpdate={updateExercise} onRemove={() => removeExercise(entry.entryId)}
               addedIds={addedIds} onStartRest={handleRestButton} restRem={restRem} />
           ))}
         </div>
         <div className="addwrap">
-          <button className="addexbtn" onClick={()=>setShowBrowser(true)}>+ Add Exercise</button>
+          <button className="addexbtn" onClick={() => setShowBrowser(true)}>+ Add Exercise</button>
         </div>
         <div className="botbar">
           <button className="discbtn" onClick={handleCancel}>Cancel</button>
-          <button className="finbtn" onClick={handleFinish} disabled={exercises.length===0}>Finish Workout</button>
+          <button className="finbtn" onClick={handleFinish} disabled={exercises.length === 0}>Finish Workout</button>
         </div>
       </>}
 
       {showBrowser && (
         <Browser allExercises={allExercises} addedIds={addedIds}
-          onAdd={ex=>{addExercise(ex);}}
-          onClose={()=>setShowBrowser(false)}
-          onOpenCustom={()=>{setShowBrowser(false);setShowCustom(true);}}
+          onAdd={ex => { addExercise(ex); }}
+          onClose={() => setShowBrowser(false)}
+          onOpenCustom={() => { setShowBrowser(false); setShowCustom(true); }}
         />
       )}
-      
+
       {showCustom && (
         <div className="moverlay">
           <CustomModal
-            onSave={async ex=>{await storage.saveCustomExercise(ex); setAllExercises(await storage.getExercises()); addExercise(ex); setShowCustom(false);}}
-            onClose={()=>{setShowCustom(false);setShowBrowser(true);}}
+            onSave={async ex => { await storage.saveCustomExercise(ex); setAllExercises(await storage.getExercises()); addExercise(ex); setShowCustom(false); }}
+            onClose={() => { setShowCustom(false); setShowBrowser(true); }}
           />
         </div>
       )}
-      
+
       {showRest && restEndTime && (
         <RestTimer
           endTime={restEndTime}
