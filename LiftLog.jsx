@@ -143,6 +143,15 @@ const storage = {
     const cur = (() => { try { return JSON.parse(localStorage.getItem("ll_custom_exercises") || "[]"); } catch { return []; } })();
     localStorage.setItem("ll_custom_exercises", JSON.stringify([...cur, ex]));
   },
+  getUserTemplates: () => { try { return JSON.parse(localStorage.getItem("ll_user_templates") || "[]"); } catch { return []; } },
+  saveUserTemplate: (t) => {
+    const all = storage.getUserTemplates().filter(x => x.id !== t.id);
+    localStorage.setItem("ll_user_templates", JSON.stringify([...all, t]));
+  },
+  deleteUserTemplate: (id) => {
+    const all = storage.getUserTemplates().filter(x => x.id !== id);
+    localStorage.setItem("ll_user_templates", JSON.stringify(all));
+  },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -150,13 +159,19 @@ const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 const pad = (n) => (n < 10 ? "0" + n : String(n));
 const fmtMs = (ms) => { const s = Math.floor(Math.abs(ms) / 1000); return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; };
 const fmtDate = (d = new Date()) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+const DEFAULT_TARGET_SETS   = 3;
+const DEFAULT_TARGET_REPS   = 8;
+const DEFAULT_TARGET_WEIGHT = 60;
+const USER_TEMPLATE_ID_PREFIX = "ut_";
+
 const makeSet = (reps, weight) => ({ id: uid(), reps, weight, done: false });
 const makeEntry = (ex) => ({
   entryId: uid(), exerciseId: ex.id, name: ex.name,
   muscleGroup: ex.muscleGroup, category: ex.category, equipment: ex.equipment,
   similarExercises: ex.similarExercises || [],
-  targetSets: 3, targetReps: 8, targetWeight: 60,
-  sets: [makeSet(8, 60), makeSet(8, 60), makeSet(8, 60)],
+  targetSets: DEFAULT_TARGET_SETS, targetReps: DEFAULT_TARGET_REPS, targetWeight: DEFAULT_TARGET_WEIGHT,
+  sets: [makeSet(DEFAULT_TARGET_REPS, DEFAULT_TARGET_WEIGHT), makeSet(DEFAULT_TARGET_REPS, DEFAULT_TARGET_WEIGHT), makeSet(DEFAULT_TARGET_REPS, DEFAULT_TARGET_WEIGHT)],
   expanded: true, showSwap: false,
 });
 
@@ -600,6 +615,48 @@ const css = `
   .tmpl-name { font-size: 13px; font-weight: 700; color: var(--text); }
   .tmpl-exes { font-size: 9px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tmpl-arr { font-size: 14px; color: var(--accent); flex-shrink: 0; }
+
+  /* ── TEMPLATE EDITOR ── */
+  .tmpl-edit-row {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surf2); border: 1px solid var(--border); border-radius: var(--rsm);
+    padding: 7px 9px; margin-bottom: 3px;
+  }
+  .tmpl-edit-info { flex: 1; min-width: 0; }
+  .tmpl-edit-name { font-size: 12px; font-weight: 700; }
+  .tmpl-edit-meta { font-size: 9px; color: var(--muted); margin-top: 1px; }
+  .tmpl-edit-btns { display: flex; gap: 4px; flex-shrink: 0; }
+  .tmpl-edit-btn {
+    background: var(--surf3); border: 1px solid var(--border2); color: var(--muted);
+    font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 3px 8px; border-radius: var(--rsm); cursor: pointer; transition: all 0.12s; text-transform: uppercase;
+  }
+  .tmpl-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tmpl-edit-btn.del:hover { border-color: var(--danger); color: var(--danger); }
+  .tmpl-empty-state { text-align: center; padding: 32px 12px; color: var(--muted); }
+  .tmpl-empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.3; }
+  .tmpl-empty-txt { font-size: 11px; letter-spacing: 1px; margin-bottom: 16px; }
+
+  /* ── TEMPLATE EXERCISE PICKER ROWS ── */
+  .tpe-row {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surf2); border: 1px solid var(--border); border-radius: var(--rsm);
+    padding: 6px 9px; margin-bottom: 3px;
+  }
+  .tpe-info { flex: 1; min-width: 0; }
+  .tpe-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tpe-inputs { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+  .tpe-rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; transition: color 0.12s; flex-shrink: 0; }
+  .tpe-rm:hover { color: var(--danger); }
+  .new-tmpl-btn {
+    width: 100%; background: var(--accent); color: #000;
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; border: none;
+    border-radius: var(--r); padding: 10px; cursor: pointer; margin-top: 8px;
+    box-shadow: 0 0 10px var(--aglow); transition: opacity 0.12s;
+  }
+  .new-tmpl-btn:hover { opacity: 0.88; }
+  .new-tmpl-btn:disabled { opacity: 0.25; cursor: not-allowed; box-shadow: none; }
 `;
 
 // ── Rest Timer ────────────────────────────────────────────────────────────────
@@ -901,7 +958,7 @@ function Summary({ session, onNew }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ onStart, onExplore, onHistory, hasActiveSession, onResume }) {
+function Home({ onStart, onExplore, onHistory, onMyTemplates, hasActiveSession, onResume }) {
   const recent = storage.getSessions().slice(-3).reverse();
   return (
     <div className="home">
@@ -915,6 +972,7 @@ function Home({ onStart, onExplore, onHistory, hasActiveSession, onResume }) {
       </button>
       <div className="home-actions">
         <button className="homebtn" onClick={onHistory}>Past Sessions</button>
+        <button className="homebtn" onClick={onMyTemplates}>My Templates</button>
         <button className="homebtn" onClick={onExplore}>Exercises</button>
       </div>
       {recent.length>0 && (
@@ -1104,8 +1162,163 @@ function HistoryScreen({ onBack }) {
   );
 }
 
+// ── Template Editor Screen ────────────────────────────────────────────────────
+function TemplateEditorScreen({ allExercises, template, onSave, onBack }) {
+  const isNew = !template;
+  const exMap = new Map(allExercises.map(e => [e.id, e]));
+  const [name, setName] = useState(template?.name || "");
+  const [entries, setEntries] = useState(
+    (template?.exercises || []).map(te => ({
+      ...te,
+      _name: exMap.get(te.exerciseId)?.name || te.exerciseId,
+      _muscleGroup: exMap.get(te.exerciseId)?.muscleGroup || "",
+    }))
+  );
+  const [showPicker, setShowPicker] = useState(false);
+
+  const addExercise = (ex) => {
+    setEntries(p => [...p, { exerciseId: ex.id, _name: ex.name, _muscleGroup: ex.muscleGroup, targetSets: DEFAULT_TARGET_SETS, targetReps: DEFAULT_TARGET_REPS, targetWeight: DEFAULT_TARGET_WEIGHT }]);
+    setShowPicker(false);
+  };
+  const removeEntry = (idx) => setEntries(p => p.filter((_, i) => i !== idx));
+  const updateEntry = (idx, field, val) => setEntries(p => p.map((e, i) => i === idx ? { ...e, [field]: +val || 0 } : e));
+
+  const save = () => {
+    if (!name.trim() || entries.length === 0) return;
+    const t = {
+      id: template?.id || USER_TEMPLATE_ID_PREFIX + uid(),
+      name: name.trim(),
+      exercises: entries.map(({ exerciseId, targetSets, targetReps, targetWeight }) => ({ exerciseId, targetSets, targetReps, targetWeight })),
+    };
+    storage.saveUserTemplate(t);
+    onSave();
+  };
+
+  const addedIds = new Set(entries.map(e => e.exerciseId));
+
+  return (
+    <div className="xscreen">
+      <div className="xhdr">
+        <button className="backbtn" onClick={onBack}>← Back</button>
+        <span className="xtitle">{isNew ? "New Template" : "Edit Template"}</span>
+      </div>
+      <div className="xscroll">
+        <div style={{marginBottom:12}}>
+          <div className="flbl">Template name</div>
+          <input className="fin" placeholder="e.g. Monday Push..." value={name} onChange={e=>setName(e.target.value)} autoFocus />
+        </div>
+
+        <div className="flbl" style={{marginBottom:5}}>Exercises · {entries.length}</div>
+        {entries.length === 0 && (
+          <div style={{textAlign:"center",padding:"16px 0",color:"var(--muted)",fontSize:11}}>Add exercises below</div>
+        )}
+        {entries.map((te, idx) => {
+          const mc = MUSCLE_COLORS[te._muscleGroup] || {};
+          return (
+            <div key={idx} className="tpe-row">
+              <div className="tpe-info">
+                <div className="tpe-name">{te._name}</div>
+                {te._muscleGroup && <span className="mtag" style={{background:mc.bg,borderColor:mc.border,color:mc.text,fontSize:7,marginTop:3,display:"inline-block"}}>{te._muscleGroup}</span>}
+              </div>
+              <div className="tpe-inputs">
+                <input className="nin" type="number" min="1" max="20" value={te.targetSets} onChange={e=>updateEntry(idx,"targetSets",e.target.value)} title="Sets" />
+                <span className="sp">×</span>
+                <input className="nin" type="number" min="1" max="100" value={te.targetReps} onChange={e=>updateEntry(idx,"targetReps",e.target.value)} title="Reps" />
+                <span className="sp">@</span>
+                <input className="nin w" type="number" min="0" step="2.5" value={te.targetWeight} onChange={e=>updateEntry(idx,"targetWeight",e.target.value)} title="kg" />
+                <span className="sp" style={{marginLeft:1}}>kg</span>
+              </div>
+              <button className="tpe-rm" onClick={()=>removeEntry(idx)}>−</button>
+            </div>
+          );
+        })}
+
+        <button className="addexbtn" style={{marginTop:4}} onClick={()=>setShowPicker(true)}>+ Add Exercise</button>
+
+        <button className="new-tmpl-btn" onClick={save} disabled={!name.trim() || entries.length === 0}>
+          {isNew ? "Create Template" : "Save Changes"}
+        </button>
+      </div>
+
+      {showPicker && (
+        <Browser
+          allExercises={allExercises}
+          addedIds={addedIds}
+          onAdd={addExercise}
+          onClose={()=>setShowPicker(false)}
+          onOpenCustom={()=>setShowPicker(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── My Templates Screen ───────────────────────────────────────────────────────
+function MyTemplatesScreen({ allExercises, onBack }) {
+  const [templates, setTemplates] = useState([]);
+  const [editing, setEditing] = useState(null); // null = list, false = new, obj = edit
+
+  const reload = () => setTemplates(storage.getUserTemplates());
+  useEffect(() => { reload(); }, []);
+
+  if (editing !== null) {
+    return (
+      <TemplateEditorScreen
+        allExercises={allExercises}
+        template={editing || undefined}
+        onSave={() => { reload(); setEditing(null); }}
+        onBack={() => setEditing(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="xscreen">
+      <div className="xhdr">
+        <button className="backbtn" onClick={onBack}>← Back</button>
+        <span className="xtitle">My Templates</span>
+      </div>
+      <div className="xscroll">
+        {templates.length === 0 ? (
+          <div className="tmpl-empty-state">
+            <div className="tmpl-empty-icon">📋</div>
+            <div className="tmpl-empty-txt">No templates yet</div>
+            <button className="new-tmpl-btn" style={{maxWidth:220,margin:"0 auto",display:"block"}} onClick={()=>setEditing(false)}>
+              + Create Template
+            </button>
+          </div>
+        ) : (
+          <>
+            {(() => {
+              const exMap = new Map(allExercises.map(e => [e.id, e]));
+              return templates.map(t => {
+                const names = t.exercises.map(te => exMap.get(te.exerciseId)?.name).filter(Boolean);
+                return (
+                  <div key={t.id} className="tmpl-edit-row">
+                    <div className="tmpl-edit-info">
+                      <div className="tmpl-edit-name">{t.name}</div>
+                      <div className="tmpl-edit-meta">{names.join(" · ") || "No exercises"}</div>
+                    </div>
+                    <div className="tmpl-edit-btns">
+                      <button className="tmpl-edit-btn" onClick={()=>setEditing(t)}>Edit</button>
+                      <button className="tmpl-edit-btn del" onClick={()=>{ storage.deleteUserTemplate(t.id); reload(); }}>Delete</button>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+            <button className="new-tmpl-btn" onClick={()=>setEditing(false)}>+ New Template</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Template Picker Modal ─────────────────────────────────────────────────────
 function TemplateModal({ allExercises, onStart, onClose }) {
+  const userTemplates = storage.getUserTemplates();
+  const exMap = new Map(allExercises.map(e => [e.id, e]));
   return (
     <div className="moverlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -1123,9 +1336,26 @@ function TemplateModal({ allExercises, onStart, onClose }) {
             </div>
             <div className="tmpl-arr">+</div>
           </div>
-          <div className="grplbl" style={{marginTop:10}}>Templates</div>
+          {userTemplates.length > 0 && (
+            <>
+              <div className="grplbl" style={{marginTop:10}}>Your workouts</div>
+              {userTemplates.map(t=>{
+                const names = t.exercises.map(te=>exMap.get(te.exerciseId)?.name).filter(Boolean);
+                return (
+                  <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
+                    <div className="tmpl-info">
+                      <div className="tmpl-name">{t.name}</div>
+                      <div className="tmpl-exes">{names.join(" · ")}</div>
+                    </div>
+                    <div className="tmpl-arr">→</div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+          <div className="grplbl" style={{marginTop:10}}>Preset workouts</div>
           {TEMPLATES.map(t=>{
-            const names = t.exercises.map(te=>allExercises.find(e=>e.id===te.exerciseId)?.name).filter(Boolean);
+            const names = t.exercises.map(te=>exMap.get(te.exerciseId)?.name).filter(Boolean);
             return (
               <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
                 <div className="tmpl-info">
@@ -1221,12 +1451,14 @@ export default function LiftLog() {
             onStart={()=>setShowTemplates(true)}
             onExplore={()=>setScreen("explore")}
             onHistory={()=>setScreen("history")}
+            onMyTemplates={()=>setScreen("mytemplates")}
             hasActiveSession={hasActiveSession}
             onResume={()=>setScreen("session")}
           />
         )}
         {screen==="explore" && <ExploreScreen allExercises={allExercises} onBack={()=>setScreen("home")} />}
         {screen==="history" && <HistoryScreen onBack={()=>setScreen("home")} />}
+        {screen==="mytemplates" && <MyTemplatesScreen allExercises={allExercises} onBack={()=>setScreen("home")} />}
         {screen==="summary" && session && <Summary session={session} onNew={()=>{setScreen("home");setSession(null);}} />}
 
         {screen==="session" && session && <>
