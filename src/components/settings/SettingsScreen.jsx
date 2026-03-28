@@ -92,6 +92,14 @@ export function SettingsScreen({ settings, setSettings, onBack }) {
           </button>
         </div>
 
+        <div className="seclbl" style={{marginBottom: 8, marginTop: 32}}>Account</div>
+        <button 
+          onClick={() => storage.logout()}
+          style={{ width: '100%', padding: '14px', background: '#ff3d5c20', color: '#ff3d5c', border: '1px solid #ff3d5c40', borderRadius: 'var(--r)', fontWeight: 700, cursor: 'pointer' }}
+        >
+          Log Out
+        </button>
+
       </div>
     </div>
   );

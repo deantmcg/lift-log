@@ -15,6 +15,7 @@ import { Browser } from './components/workout/Browser';
 import { CustomModal } from './components/workout/CustomModal';
 import { RestTimer } from './components/workout/RestTimer';
 import { SettingsScreen } from './components/settings/SettingsScreen';
+import { LoginScreen } from './components/auth/LoginScreen';
 
 import './styles/index.css';
 
@@ -27,17 +28,23 @@ export default function App() {
   const [restEndTime, setRestEndTime]   = useState(null);
   const [restTotal, setRestTotal]       = useState(120);
   const [settings, setSettings]         = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('ll_token'));
   const [loading, setLoading]           = useState(true);
 
-  useEffect(() => {
+  const loadInitialData = () => {
+    setLoading(true);
     Promise.all([storage.getSettings(), storage.getExercises()]).then(([sets, exes]) => {
       setSettings(sets);
       setAllExercises(exes);
       setRestTotal(sets.defaultRest);
       document.documentElement.setAttribute('data-theme', sets.theme);
       setLoading(false);
-    });
-  }, []);
+    }).catch(e => console.error(e));
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) loadInitialData();
+  }, [isAuthenticated]);
   const [restRem, setRestRem]           = useState(null);
   const restTickRef                     = useRef(null);
 
@@ -79,6 +86,7 @@ export default function App() {
   const doneSets = exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
   const hasActiveSession = session && !session.endTime;
 
+  if (!isAuthenticated) return <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
   if (loading) return <div className="app"><div className="empty" style={{marginTop:"50%"}}>Loading data...</div></div>;
 
   return (
