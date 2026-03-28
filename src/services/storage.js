@@ -1,6 +1,8 @@
 import { EXERCISES_JSON } from '../data/exercises';
 
 export const storage = {
+  getSettings: () => { try { return JSON.parse(localStorage.getItem("ll_settings")) || { theme: "green", defaultRest: 120, showTimer: true }; } catch { return { theme: "green", defaultRest: 120, showTimer: true }; } },
+  saveSettings: (s) => localStorage.setItem("ll_settings", JSON.stringify(s)),
   getSessions: () => { try { return JSON.parse(localStorage.getItem("ll_sessions") || "[]"); } catch { return []; } },
   saveSession: (s) => { const all = storage.getSessions().filter(x => x.id !== s.id); localStorage.setItem("ll_sessions", JSON.stringify([...all, s])); },
   getExercises: () => {

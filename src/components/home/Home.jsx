@@ -3,10 +3,11 @@ import PropTypes from 'prop-types';
 import { storage } from '../../services/storage';
 import { fmtDate } from '../../utils/helpers';
 
-export function Home({ onStart, onExplore, onHistory, onMyTemplates, hasActiveSession, onResume }) {
+export function Home({ onStart, onExplore, onHistory, onMyTemplates, hasActiveSession, onResume, onSettings }) {
   const recent = storage.getSessions().slice(-3).reverse();
   return (
-    <div className="home">
+    <div className="home" style={{position: "relative"}}>
+      <button onClick={onSettings} style={{position:"absolute", top:16, right:16, background:"none", border:"none", fontSize:24, cursor:"pointer", opacity:0.7, zIndex:10}}>⚙️</button>
       <div className="homelogo">Lift<br/>Log</div>
       <div className="homesub">Track your gains</div>
       {hasActiveSession && (
@@ -47,5 +48,6 @@ Home.propTypes = {
   onHistory: PropTypes.func.isRequired,
   onMyTemplates: PropTypes.func.isRequired,
   hasActiveSession: PropTypes.bool.isRequired,
-  onResume: PropTypes.func.isRequired
+  onResume: PropTypes.func.isRequired,
+  onSettings: PropTypes.func.isRequired
 };

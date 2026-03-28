@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { fmtMs } from '../../utils/helpers';
 
-export function Topbar({ session, elapsed, setSession, onHome }) {
+export function Topbar({ session, elapsed, setSession, onHome, showTimer }) {
   return (
     <div className="topbar">
       <button className="homebtn-topbar" onClick={onHome}>← Home</button>
@@ -12,10 +12,12 @@ export function Topbar({ session, elapsed, setSession, onHome }) {
         placeholder="Session name..."
         onChange={e => setSession(s => ({...s, name: e.target.value}))} 
       />
-      <div className="topbar-r">
-        <div className="live-dot" />
-        <div className="clock">{fmtMs(elapsed)}</div>
-      </div>
+      {showTimer !== false && (
+        <div className="topbar-r">
+          <div className="live-dot" />
+          <div className="clock">{fmtMs(elapsed)}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -24,5 +26,6 @@ Topbar.propTypes = {
   session: PropTypes.object,
   elapsed: PropTypes.number.isRequired,
   setSession: PropTypes.func.isRequired,
-  onHome: PropTypes.func.isRequired
+  onHome: PropTypes.func.isRequired,
+  showTimer: PropTypes.bool
 };

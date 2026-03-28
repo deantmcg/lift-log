@@ -14,6 +14,7 @@ import { ExerciseCard } from './components/workout/ExerciseCard';
 import { Browser } from './components/workout/Browser';
 import { CustomModal } from './components/workout/CustomModal';
 import { RestTimer } from './components/workout/RestTimer';
+import { SettingsScreen } from './components/settings/SettingsScreen';
 
 import './styles/index.css';
 
@@ -25,6 +26,11 @@ export default function App() {
   const [showRest, setShowRest]         = useState(false);
   const [restEndTime, setRestEndTime]   = useState(null);
   const [restTotal, setRestTotal]       = useState(120);
+  const [settings, setSettings]         = useState(() => storage.getSettings());
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', settings.theme);
+  }, []);
   const [restRem, setRestRem]           = useState(null);
   const restTickRef                     = useRef(null);
 
@@ -53,7 +59,8 @@ export default function App() {
     if (restEndTime && restEndTime > Date.now() && showRest === false) {
       setShowRest(true);
     } else {
-      setRestEndTime(Date.now() + restTotal * 1000);
+      setRestEndTime(Date.now() + settings.defaultRest * 1000);
+      setRestTotal(settings.defaultRest);
       setShowRest(true);
     }
   };
@@ -70,7 +77,7 @@ export default function App() {
     <div className="app">
 
       {screen==="session" && (
-        <Topbar session={session} elapsed={elapsed} setSession={setSession} onHome={() => setScreen("home")} />
+        <Topbar session={session} elapsed={elapsed} setSession={setSession} onHome={() => setScreen("home")} showTimer={settings.showTimer} />
       )}
 
       {screen==="home" && (
@@ -81,6 +88,15 @@ export default function App() {
           onMyTemplates={()=>setScreen("mytemplates")}
           hasActiveSession={hasActiveSession}
           onResume={()=>setScreen("session")}
+          onSettings={()=>setScreen("settings")}
+        />
+      )}
+
+      {screen==="settings" && (
+        <SettingsScreen
+          settings={settings}
+          setSettings={setSettings}
+          onBack={()=>setScreen("home")}
         />
       )}
       

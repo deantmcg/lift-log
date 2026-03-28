@@ -483,3 +483,8 @@
   }
   .new-tmpl-btn:hover { opacity: 0.88; }
   .new-tmpl-btn:disabled { opacity: 0.25; cursor: not-allowed; box-shadow: none; }
+
+:root[data-theme='blue'] { --accent: #3db8ff; --accent2: #2db0f4; --adim: #3db8ff18; --aglow: #3db8ff28; }
+:root[data-theme='red'] { --accent: #ff3d5c; --accent2: #f42d4c; --adim: #ff3d5c18; --aglow: #ff3d5c28; }
+:root[data-theme='orange'] { --accent: #ffaa33; --accent2: #f4a022; --adim: #ffaa3318; --aglow: #ffaa3328; }
+:root[data-theme='purple'] { --accent: #c03dff; --accent2: #b02df4; --adim: #c03dff18; --aglow: #c03dff28; }
