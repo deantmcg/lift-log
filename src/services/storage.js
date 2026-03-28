@@ -1,9 +1,11 @@
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 const authFetch = async (url, options = {}) => {
   const token = localStorage.getItem('ll_token');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(API_BASE + url, { ...options, headers });
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem('ll_token');
     window.location.reload(); 
@@ -13,7 +15,7 @@ const authFetch = async (url, options = {}) => {
 
 export const storage = {
   login: async (username, password) => {
-    const r = await fetch('/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username, password}) });
+    const r = await fetch(API_BASE + '/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username, password}) });
     const data = await r.json();
     if (data.success) {
       localStorage.setItem('ll_token', data.token);
