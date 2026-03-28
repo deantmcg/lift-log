@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { storage } from '../../services/storage';
 import { fmtMs, fmtDate } from '../../utils/helpers';
 
 export function Summary({ session, onNew }) {
+  const [prev, setPrev] = useState([]);
+  useEffect(() => {
+    storage.getSessions().then(sess => setPrev(sess.filter(s => s.id !== session.id)));
+  }, [session.id]);
+
   const totalSets = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
   const totalVol  = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+s.reps*s.weight,0),0);
   const dur = session.endTime - session.startTime;
-  const prev = storage.getSessions().filter(s=>s.id!==session.id);
   const prs = [];
   
   session.exercises.forEach(entry => {

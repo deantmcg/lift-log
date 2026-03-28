@@ -26,10 +26,17 @@ export default function App() {
   const [showRest, setShowRest]         = useState(false);
   const [restEndTime, setRestEndTime]   = useState(null);
   const [restTotal, setRestTotal]       = useState(120);
-  const [settings, setSettings]         = useState(() => storage.getSettings());
+  const [settings, setSettings]         = useState(null);
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', settings.theme);
+    Promise.all([storage.getSettings(), storage.getExercises()]).then(([sets, exes]) => {
+      setSettings(sets);
+      setAllExercises(exes);
+      setRestTotal(sets.defaultRest);
+      document.documentElement.setAttribute('data-theme', sets.theme);
+      setLoading(false);
+    });
   }, []);
   const [restRem, setRestRem]           = useState(null);
   const restTickRef                     = useRef(null);
@@ -49,8 +56,6 @@ export default function App() {
 
   const [allExercises, setAllExercises] = useState([]);
 
-  useEffect(() => { setAllExercises(storage.getExercises()); }, []);
-
   const { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, finish, cancel } = useWorkouts(allExercises);
 
   const elapsed = useTimer(session?.startTime, screen === "session" && session);
@@ -59,8 +64,9 @@ export default function App() {
     if (restEndTime && restEndTime > Date.now() && showRest === false) {
       setShowRest(true);
     } else {
-      setRestEndTime(Date.now() + settings.defaultRest * 1000);
-      setRestTotal(settings.defaultRest);
+      const dr = settings ? settings.defaultRest : 120;
+      setRestEndTime(Date.now() + dr * 1000);
+      setRestTotal(dr);
       setShowRest(true);
     }
   };
@@ -72,6 +78,8 @@ export default function App() {
   const addedIds = new Set(exercises.map(e=>e.exerciseId));
   const doneSets = exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
   const hasActiveSession = session && !session.endTime;
+
+  if (loading) return <div className="app"><div className="empty" style={{marginTop:"50%"}}>Loading data...</div></div>;
 
   return (
     <div className="app">
@@ -148,7 +156,7 @@ export default function App() {
       {showCustom && (
         <div className="moverlay">
           <CustomModal
-            onSave={ex=>{setAllExercises(storage.getExercises());addExercise(ex);setShowCustom(false);}}
+            onSave={async ex=>{await storage.saveCustomExercise(ex); setAllExercises(await storage.getExercises()); addExercise(ex); setShowCustom(false);}}
             onClose={()=>{setShowCustom(false);setShowBrowser(true);}}
           />
         </div>

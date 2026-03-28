@@ -31,10 +31,10 @@ export function useWorkouts(allExercises) {
   const updateExercise = (u)  => setExercises(p=>p.map(e=>e.entryId===u.entryId?u:e));
   const removeExercise = (id) => setExercises(p=>p.filter(e=>e.entryId!==id));
 
-  const finish = () => {
+  const finish = async () => {
     const done = { ...session, exercises, endTime:Date.now() };
-    storage.saveSession(done);
     setSession(done);
+    await storage.saveSession(done);
     return done;
   };
 

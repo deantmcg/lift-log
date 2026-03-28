@@ -7,7 +7,7 @@ export function MyTemplatesScreen({ allExercises, onBack }) {
   const [templates, setTemplates] = useState([]);
   const [editing, setEditing] = useState(null); // null = list, false = new, obj = edit
 
-  const reload = () => setTemplates(storage.getUserTemplates());
+  const reload = () => storage.getUserTemplates().then(setTemplates);
   
   useEffect(() => { 
     reload(); 
@@ -53,7 +53,7 @@ export function MyTemplatesScreen({ allExercises, onBack }) {
                     </div>
                     <div className="tmpl-edit-btns">
                       <button className="tmpl-edit-btn" onClick={()=>setEditing(t)}>Edit</button>
-                      <button className="tmpl-edit-btn del" onClick={()=>{ storage.deleteUserTemplate(t.id); reload(); }}>Delete</button>
+                      <button className="tmpl-edit-btn del" onClick={async ()=>{ await storage.deleteUserTemplate(t.id); reload(); }}>Delete</button>
                     </div>
                   </div>
                 );

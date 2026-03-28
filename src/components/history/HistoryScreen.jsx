@@ -10,7 +10,8 @@ import { CustomModal } from '../workout/CustomModal';
 function SessionEditScreen({ origSession, onSave, onCancel }) {
   const [session, setSession] = useState(() => ({ ...origSession }));
   const [exercises, setExercises] = useState(() => origSession.exercises.map(e => ({ ...e, sets: e.sets.map(s => ({...s})) })));
-  const [allExercises, setAllExercises] = useState(() => storage.getExercises());
+  const [allExercises, setAllExercises] = useState([]);
+  useEffect(() => { storage.getExercises().then(setAllExercises); }, []);
   const addedIds = new Set(exercises.map(e=>e.exerciseId));
   const updateExercise = (u) => setExercises(p=>p.map(e=>e.entryId===u.entryId?u:e));
   const removeExercise = (id) => setExercises(p=>p.filter(e=>e.entryId!==id));
@@ -25,9 +26,10 @@ function SessionEditScreen({ origSession, onSave, onCancel }) {
         <button className="backbtn" onClick={onCancel}>Cancel</button>
         <input className="sname-input" value={session.name} placeholder="Session name..."
           onChange={e=>setSession(s=>({...s,name:e.target.value}))} style={{flex:1,marginLeft:8}} />
-        <button className="hist-save-btn" onClick={()=>{
+        <button className="hist-save-btn" onClick={async ()=>{
           const updated = { ...session, exercises };
-          storage.saveSession(updated);
+          // Note: ideally this should call PUT on the server if supported
+          await storage.saveSession(updated);
           onSave(updated);
         }}>Save</button>
       </div>
@@ -66,7 +68,7 @@ function SessionEditScreen({ origSession, onSave, onCancel }) {
       {showCustom && (
         <div className="moverlay">
           <CustomModal
-            onSave={ex=>{setAllExercises(storage.getExercises());addExercise(ex);setShowCustom(false);}}
+            onSave={async ex=>{await storage.saveCustomExercise(ex); setAllExercises(await storage.getExercises()); addExercise(ex); setShowCustom(false);}}
             onClose={()=>{setShowCustom(false);setShowBrowser(true);}}
           />
         </div>
@@ -142,7 +144,7 @@ export function HistoryScreen({ onBack }) {
   const [selected, setSelected] = useState(null);
   
   useEffect(() => { 
-    setSessions(storage.getSessions().slice().reverse()); 
+    storage.getSessions().then(setSessions); 
   }, []);
 
   if (selected) {

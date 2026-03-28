@@ -33,14 +33,14 @@ export function TemplateEditorScreen({ allExercises, template, onSave, onBack })
   const removeEntry = (idx) => setEntries(p => p.filter((_, i) => i !== idx));
   const updateEntry = (idx, field, val) => setEntries(p => p.map((e, i) => i === idx ? { ...e, [field]: +val || 0 } : e));
 
-  const save = () => {
+  const save = async () => {
     if (!name.trim() || entries.length === 0) return;
     const t = {
-      id: template?.id || constants.USER_TEMPLATE_ID_PREFIX + uid(),
+      id: template?.id,
       name: name.trim(),
       exercises: entries.map(({ exerciseId, targetSets, targetReps, targetWeight }) => ({ exerciseId, targetSets, targetReps, targetWeight })),
     };
-    storage.saveUserTemplate(t);
+    await storage.saveUserTemplate(t);
     onSave();
   };
 

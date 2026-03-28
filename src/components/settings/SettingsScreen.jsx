@@ -4,10 +4,10 @@ import { storage } from '../../services/storage';
 import { NumInput } from '../common/NumInput';
 
 export function SettingsScreen({ settings, setSettings, onBack }) {
-  const updateSetting = (key, val) => {
+  const updateSetting = async (key, val) => {
     const next = { ...settings, [key]: val };
     setSettings(next);
-    storage.saveSettings(next);
+    await storage.saveSettings(next);
     if (key === 'theme') {
       document.documentElement.setAttribute('data-theme', val);
     }

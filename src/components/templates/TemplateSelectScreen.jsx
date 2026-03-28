@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { storage } from '../../services/storage';
 import { TEMPLATES } from '../../data/templates';
 
 export function TemplateSelectScreen({ allExercises, onStart, onBack }) {
-  const userTemplates = storage.getUserTemplates();
+  const [userTemplates, setUserTemplates] = useState([]);
+  useEffect(() => { storage.getUserTemplates().then(setUserTemplates); }, []);
   const exMap = new Map(allExercises.map(e => [e.id, e]));
 
   return (

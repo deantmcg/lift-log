@@ -1,25 +1,15 @@
-import { EXERCISES_JSON } from '../data/exercises';
-
 export const storage = {
-  getSettings: () => { try { return JSON.parse(localStorage.getItem("ll_settings")) || { theme: "green", defaultRest: 120, showTimer: true }; } catch { return { theme: "green", defaultRest: 120, showTimer: true }; } },
-  saveSettings: (s) => localStorage.setItem("ll_settings", JSON.stringify(s)),
-  getSessions: () => { try { return JSON.parse(localStorage.getItem("ll_sessions") || "[]"); } catch { return []; } },
-  saveSession: (s) => { const all = storage.getSessions().filter(x => x.id !== s.id); localStorage.setItem("ll_sessions", JSON.stringify([...all, s])); },
-  getExercises: () => {
-    const custom = (() => { try { return JSON.parse(localStorage.getItem("ll_custom_exercises") || "[]"); } catch { return []; } })();
-    return [...EXERCISES_JSON, ...custom];
-  },
-  saveCustomExercise: (ex) => {
-    const cur = (() => { try { return JSON.parse(localStorage.getItem("ll_custom_exercises") || "[]"); } catch { return []; } })();
-    localStorage.setItem("ll_custom_exercises", JSON.stringify([...cur, ex]));
-  },
-  getUserTemplates: () => { try { return JSON.parse(localStorage.getItem("ll_user_templates") || "[]"); } catch { return []; } },
-  saveUserTemplate: (t) => {
-    const all = storage.getUserTemplates().filter(x => x.id !== t.id);
-    localStorage.setItem("ll_user_templates", JSON.stringify([...all, t]));
-  },
-  deleteUserTemplate: (id) => {
-    const all = storage.getUserTemplates().filter(x => x.id !== id);
-    localStorage.setItem("ll_user_templates", JSON.stringify(all));
-  },
+  getSettings: async () => { const r = await fetch('/api/settings'); return r.json(); },
+  saveSettings: async (s) => await fetch('/api/settings', { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(s) }),
+  
+  getSessions: async () => { const r = await fetch('/api/sessions'); return r.json(); },
+  saveSession: async (s) => await fetch('/api/sessions', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(s) }),
+  
+  getExercises: async () => { const r = await fetch('/api/exercises'); return r.json(); },
+  saveCustomExercise: async (ex) => await fetch('/api/exercises', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(ex) }),
+  
+  // Note: /api/workouts returns ALL workouts. For custom only, we can filter or update backend. Let's filter here for safety.
+  getUserTemplates: async () => { const r = await fetch('/api/workouts'); const ws = await r.json(); return ws.filter(w => w.isCustom); },
+  saveUserTemplate: async (t) => await fetch('/api/workouts', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(t) }),
+  deleteUserTemplate: async (id) => await fetch(`/api/workouts/${id}`, { method: 'DELETE' })
 };

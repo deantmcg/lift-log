@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { storage } from '../../services/storage';
 import { fmtDate } from '../../utils/helpers';
 
 export function Home({ onStart, onExplore, onHistory, onMyTemplates, hasActiveSession, onResume, onSettings }) {
-  const recent = storage.getSessions().slice(-3).reverse();
+  const [recent, setRecent] = useState([]);
+  useEffect(() => { storage.getSessions().then(s => setRecent(s.slice(0, 3))); }, []);
+
   return (
     <div className="home" style={{position: "relative"}}>
       <button onClick={onSettings} style={{position:"absolute", top:16, right:16, background:"none", border:"none", fontSize:24, cursor:"pointer", opacity:0.7, zIndex:10}}>⚙️</button>
