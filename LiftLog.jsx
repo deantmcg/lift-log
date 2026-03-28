@@ -2,35 +2,99 @@ import { useState, useEffect, useRef } from "react";
 
 // ── Exercise data ─────────────────────────────────────────────────────────────
 const EXERCISES_JSON = [
-  { id: "e001", name: "Bench Press", category: "push", muscleGroup: "chest", equipment: "barbell", similarExercises: ["e002","e003","e004"] },
-  { id: "e002", name: "Incline Bench Press", category: "push", muscleGroup: "chest", equipment: "barbell", similarExercises: ["e001","e003","e004"] },
-  { id: "e003", name: "Dumbbell Fly", category: "push", muscleGroup: "chest", equipment: "dumbbell", similarExercises: ["e001","e002","e004"] },
-  { id: "e004", name: "Cable Crossover", category: "push", muscleGroup: "chest", equipment: "cable", similarExercises: ["e001","e002","e003"] },
-  { id: "e005", name: "Overhead Press", category: "push", muscleGroup: "shoulders", equipment: "barbell", similarExercises: ["e006","e007"] },
-  { id: "e006", name: "Lateral Raise", category: "push", muscleGroup: "shoulders", equipment: "dumbbell", similarExercises: ["e005","e007"] },
-  { id: "e007", name: "Arnold Press", category: "push", muscleGroup: "shoulders", equipment: "dumbbell", similarExercises: ["e005","e006"] },
-  { id: "e008", name: "Tricep Pushdown", category: "push", muscleGroup: "arms", equipment: "cable", similarExercises: ["e009","e010"] },
-  { id: "e009", name: "Skull Crusher", category: "push", muscleGroup: "arms", equipment: "barbell", similarExercises: ["e008","e010"] },
-  { id: "e010", name: "Dips", category: "push", muscleGroup: "arms", equipment: "bodyweight", similarExercises: ["e008","e009"] },
-  { id: "e011", name: "Deadlift", category: "pull", muscleGroup: "back", equipment: "barbell", similarExercises: ["e012","e013"] },
-  { id: "e012", name: "Barbell Row", category: "pull", muscleGroup: "back", equipment: "barbell", similarExercises: ["e011","e013","e014"] },
-  { id: "e013", name: "Pull-up", category: "pull", muscleGroup: "back", equipment: "bodyweight", similarExercises: ["e012","e014"] },
-  { id: "e014", name: "Lat Pulldown", category: "pull", muscleGroup: "back", equipment: "cable", similarExercises: ["e013","e012"] },
-  { id: "e015", name: "Seated Cable Row", category: "pull", muscleGroup: "back", equipment: "cable", similarExercises: ["e012","e014"] },
-  { id: "e016", name: "Barbell Curl", category: "pull", muscleGroup: "arms", equipment: "barbell", similarExercises: ["e017","e018"] },
-  { id: "e017", name: "Hammer Curl", category: "pull", muscleGroup: "arms", equipment: "dumbbell", similarExercises: ["e016","e018"] },
-  { id: "e018", name: "Preacher Curl", category: "pull", muscleGroup: "arms", equipment: "cable", similarExercises: ["e016","e017"] },
-  { id: "e019", name: "Squat", category: "legs", muscleGroup: "legs", equipment: "barbell", similarExercises: ["e020","e021","e022"] },
-  { id: "e020", name: "Leg Press", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e019","e021"] },
-  { id: "e021", name: "Hack Squat", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e019","e020"] },
-  { id: "e022", name: "Romanian Deadlift", category: "legs", muscleGroup: "legs", equipment: "barbell", similarExercises: ["e023","e019"] },
-  { id: "e023", name: "Leg Curl", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e022","e024"] },
-  { id: "e024", name: "Leg Extension", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e023","e020"] },
-  { id: "e025", name: "Calf Raise", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e026"] },
-  { id: "e026", name: "Standing Calf Raise", category: "legs", muscleGroup: "legs", equipment: "dumbbell", similarExercises: ["e025"] },
-  { id: "e027", name: "Plank", category: "full body", muscleGroup: "core", equipment: "bodyweight", similarExercises: ["e028","e029"] },
-  { id: "e028", name: "Ab Rollout", category: "full body", muscleGroup: "core", equipment: "bodyweight", similarExercises: ["e027","e029"] },
-  { id: "e029", name: "Cable Crunch", category: "full body", muscleGroup: "core", equipment: "cable", similarExercises: ["e027","e028"] },
+  { id: "e001", name: "Bench Press", category: "push", muscleGroup: "chest", equipment: "barbell", similarExercises: ["e002","e003","e004"], description: "Lie flat on a bench, grip the bar slightly wider than shoulders. Lower the bar to mid-chest under control, then press back up to full arm extension. The cornerstone chest mass builder." },
+  { id: "e002", name: "Incline Bench Press", category: "push", muscleGroup: "chest", equipment: "barbell", similarExercises: ["e001","e003","e004"], description: "Set bench to 30–45°. Grip bar wider than shoulders and press from upper chest. Emphasises the upper pec and anterior deltoid for a full chest shape." },
+  { id: "e003", name: "Dumbbell Fly", category: "push", muscleGroup: "chest", equipment: "dumbbell", similarExercises: ["e001","e002","e004"], description: "Lie flat, hold dumbbells above chest with a slight elbow bend. Open arms wide in an arc, then squeeze chest to bring them back. Great chest isolation with a deep stretch." },
+  { id: "e004", name: "Cable Crossover", category: "push", muscleGroup: "chest", equipment: "cable", similarExercises: ["e001","e002","e003"], description: "Stand between cable towers with handles at shoulder height. Draw handles down and across in a wide arc, squeezing chest hard at the bottom. Provides constant tension throughout." },
+  { id: "e005", name: "Overhead Press", category: "push", muscleGroup: "shoulders", equipment: "barbell", similarExercises: ["e006","e007"], description: "Stand or sit, grip bar at shoulder width just outside the neck. Press directly overhead to lockout, then lower back to the front delts. The primary shoulder mass builder; also works triceps heavily." },
+  { id: "e006", name: "Lateral Raise", category: "push", muscleGroup: "shoulders", equipment: "dumbbell", similarExercises: ["e005","e007"], description: "Hold dumbbells at sides, raise arms out to shoulder height with a slight elbow bend. Pause at top, lower slowly. Isolates the lateral deltoid — key for building shoulder width." },
+  { id: "e007", name: "Arnold Press", category: "push", muscleGroup: "shoulders", equipment: "dumbbell", similarExercises: ["e005","e006"], description: "Start with dumbbells at chin height, palms facing you. Rotate palms outward as you press overhead, then reverse on the way down. Named after Schwarzenegger — hits all three deltoid heads." },
+  { id: "e008", name: "Tricep Pushdown", category: "push", muscleGroup: "arms", equipment: "cable", similarExercises: ["e009","e010"], description: "Attach a rope or bar to a high cable. Keeping elbows pinned to your sides, push the handle down to full extension, then slowly return. Classic tricep isolation for the lateral and medial heads." },
+  { id: "e009", name: "Skull Crusher", category: "push", muscleGroup: "arms", equipment: "barbell", similarExercises: ["e008","e010"], description: "Lie on a bench and hold a barbell above your forehead with arms extended. Bend only at the elbows, lowering the bar toward your forehead, then extend back up. Directly targets the long head of triceps." },
+  { id: "e010", name: "Dips", category: "push", muscleGroup: "arms", equipment: "bodyweight", similarExercises: ["e008","e009"], description: "Support yourself on parallel bars. Lower your body by bending elbows until upper arms are parallel to the floor, then press back up to lockout. Compounds chest and triceps; lean forward for more chest emphasis." },
+  { id: "e011", name: "Deadlift", category: "pull", muscleGroup: "back", equipment: "barbell", similarExercises: ["e012","e013"], description: "Stand over the bar, feet hip-width. Grip just outside your legs, brace your core, then drive through your heels and hips to stand tall. The ultimate full-body strength movement — builds the entire posterior chain." },
+  { id: "e012", name: "Barbell Row", category: "pull", muscleGroup: "back", equipment: "barbell", similarExercises: ["e011","e013","e014"], description: "Hinge forward to near-horizontal with a neutral spine. Pull the bar to your lower chest, driving elbows back and squeezing shoulder blades together at the top. The core back thickness builder." },
+  { id: "e013", name: "Pull-up", category: "pull", muscleGroup: "back", equipment: "bodyweight", similarExercises: ["e012","e014"], description: "Dead hang from a bar with an overhand grip wider than shoulders. Pull yourself up until chin clears the bar, then lower under control. The ultimate bodyweight back exercise; also develops biceps and grip strength." },
+  { id: "e014", name: "Lat Pulldown", category: "pull", muscleGroup: "back", equipment: "cable", similarExercises: ["e013","e012"], description: "Sit at a cable machine with a wide overhand grip. Pull the bar down to your upper chest, driving elbows toward your hips. Excellent lat isolator and a more accessible alternative to pull-ups." },
+  { id: "e015", name: "Seated Cable Row", category: "pull", muscleGroup: "back", equipment: "cable", similarExercises: ["e012","e014"], description: "Sit upright at a low cable station, feet on the pads. Pull the handle into your lower chest keeping your back neutral, then return with a full arm extension. Develops mid-back thickness and rear deltoids." },
+  { id: "e016", name: "Barbell Curl", category: "pull", muscleGroup: "arms", equipment: "barbell", similarExercises: ["e017","e018"], description: "Stand holding a barbell with an underhand grip. Curl from full extension to peak bicep contraction, then lower slowly. The classic bicep mass builder with the highest loading potential." },
+  { id: "e017", name: "Hammer Curl", category: "pull", muscleGroup: "arms", equipment: "dumbbell", similarExercises: ["e016","e018"], description: "Hold dumbbells with a neutral (hammer) grip, thumbs pointing up. Curl both arms simultaneously. Targets the brachialis and brachioradialis alongside the biceps for overall arm thickness." },
+  { id: "e018", name: "Preacher Curl", category: "pull", muscleGroup: "arms", equipment: "cable", similarExercises: ["e016","e017"], description: "Rest your upper arms on the preacher bench pad, curl the bar or handle up to full contraction. The pad eliminates shoulder involvement for completely isolated bicep work — great for building the peak." },
+  { id: "e019", name: "Squat", category: "legs", muscleGroup: "legs", equipment: "barbell", similarExercises: ["e020","e021","e022"], description: "Barbell across upper back, feet shoulder-width with slight toe flare. Break at hips and knees simultaneously, descend until thighs are parallel to the floor, then drive back up through your heels. The king of leg exercises." },
+  { id: "e020", name: "Leg Press", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e019","e021"], description: "Sit in the machine with feet shoulder-width on the platform. Push the platform away to near full extension, then lower slowly under control. Allows high-volume leg training with reduced spinal load compared to squats." },
+  { id: "e021", name: "Hack Squat", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e019","e020"], description: "Shoulders in the pads, feet low on the platform. Squat down until thighs reach 90°, then drive back up. Machine squat variation that emphasises the quads while reducing lower back involvement." },
+  { id: "e022", name: "Romanian Deadlift", category: "legs", muscleGroup: "legs", equipment: "barbell", similarExercises: ["e023","e019"], description: "Hold the bar at hip height, push hips back and hinge forward while keeping legs nearly straight. Feel the deep hamstring stretch at the bottom, then drive hips forward to return. The best hamstring builder." },
+  { id: "e023", name: "Leg Curl", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e022","e024"], description: "Lie face down on the machine with the pad behind your ankles. Curl your heels toward your glutes against resistance, squeeze at the top, then lower slowly. Direct hamstring isolation." },
+  { id: "e024", name: "Leg Extension", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e023","e020"], description: "Sit on the machine with the pad across your shins. Extend legs to full lockout, squeezing quads hard at the top, then lower under control. Pure quad isolation — excellent as a finisher or warm-up." },
+  { id: "e025", name: "Calf Raise", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e026"], description: "Stand on the calf raise machine with shoulders under the pads, balls of feet on the edge. Rise up as high as possible, squeeze hard at the top, then lower below the platform for a full stretch." },
+  { id: "e026", name: "Standing Calf Raise", category: "legs", muscleGroup: "legs", equipment: "dumbbell", similarExercises: ["e025"], description: "Hold dumbbells and stand with the balls of your feet on a step edge. Raise heels as high as possible, pause at the top, then lower below step level for a full range of motion. Great calf isolation." },
+  { id: "e027", name: "Plank", category: "full body", muscleGroup: "core", equipment: "bodyweight", similarExercises: ["e028","e029"], description: "Forearms and toes on the floor, body forming a straight line from head to heels. Hold the position while breathing steadily. Builds anti-extension core stability, endurance, and total-body tension." },
+  { id: "e028", name: "Ab Rollout", category: "full body", muscleGroup: "core", equipment: "bodyweight", similarExercises: ["e027","e029"], description: "Kneel with an ab wheel in your hands. Roll forward until your body is nearly flat, bracing your core to prevent your hips from sagging. Contract abs hard to pull back to the start. An advanced anti-extension core exercise." },
+  { id: "e029", name: "Cable Crunch", category: "full body", muscleGroup: "core", equipment: "cable", similarExercises: ["e027","e028"], description: "Kneel at a high cable with a rope attachment behind your head. Crunch down, bringing elbows toward knees while rounding the lower back. Allows progressive overload on abs that bodyweight crunches cannot provide." },
+];
+
+// ── Preset Templates ──────────────────────────────────────────────────────────
+const TEMPLATES = [
+  {
+    id: "t001", name: "Push Day",
+    exercises: [
+      { exerciseId: "e001", targetSets: 4, targetReps: 8,  targetWeight: 80 },
+      { exerciseId: "e002", targetSets: 3, targetReps: 10, targetWeight: 70 },
+      { exerciseId: "e005", targetSets: 4, targetReps: 8,  targetWeight: 60 },
+      { exerciseId: "e006", targetSets: 3, targetReps: 12, targetWeight: 10 },
+      { exerciseId: "e008", targetSets: 3, targetReps: 12, targetWeight: 25 },
+    ],
+  },
+  {
+    id: "t002", name: "Pull Day",
+    exercises: [
+      { exerciseId: "e011", targetSets: 4, targetReps: 5,  targetWeight: 100 },
+      { exerciseId: "e012", targetSets: 4, targetReps: 8,  targetWeight: 70  },
+      { exerciseId: "e014", targetSets: 3, targetReps: 10, targetWeight: 55  },
+      { exerciseId: "e015", targetSets: 3, targetReps: 12, targetWeight: 50  },
+      { exerciseId: "e016", targetSets: 3, targetReps: 10, targetWeight: 35  },
+    ],
+  },
+  {
+    id: "t003", name: "Leg Day",
+    exercises: [
+      { exerciseId: "e019", targetSets: 4, targetReps: 6,  targetWeight: 100 },
+      { exerciseId: "e022", targetSets: 3, targetReps: 10, targetWeight: 80  },
+      { exerciseId: "e020", targetSets: 3, targetReps: 12, targetWeight: 120 },
+      { exerciseId: "e023", targetSets: 3, targetReps: 12, targetWeight: 50  },
+      { exerciseId: "e025", targetSets: 4, targetReps: 15, targetWeight: 60  },
+    ],
+  },
+  {
+    id: "t004", name: "Upper Body",
+    exercises: [
+      { exerciseId: "e001", targetSets: 3, targetReps: 8,  targetWeight: 80 },
+      { exerciseId: "e012", targetSets: 3, targetReps: 8,  targetWeight: 70 },
+      { exerciseId: "e005", targetSets: 3, targetReps: 10, targetWeight: 55 },
+      { exerciseId: "e013", targetSets: 3, targetReps: 8,  targetWeight: 0  },
+      { exerciseId: "e016", targetSets: 3, targetReps: 10, targetWeight: 35 },
+    ],
+  },
+  {
+    id: "t005", name: "Lower Body",
+    exercises: [
+      { exerciseId: "e019", targetSets: 4, targetReps: 8,  targetWeight: 90 },
+      { exerciseId: "e020", targetSets: 3, targetReps: 12, targetWeight: 120},
+      { exerciseId: "e022", targetSets: 3, targetReps: 10, targetWeight: 75 },
+      { exerciseId: "e023", targetSets: 3, targetReps: 12, targetWeight: 50 },
+      { exerciseId: "e027", targetSets: 3, targetReps: 45, targetWeight: 0  },
+    ],
+  },
+  {
+    id: "t006", name: "Full Body",
+    exercises: [
+      { exerciseId: "e019", targetSets: 3, targetReps: 8,  targetWeight: 90 },
+      { exerciseId: "e001", targetSets: 3, targetReps: 8,  targetWeight: 80 },
+      { exerciseId: "e012", targetSets: 3, targetReps: 8,  targetWeight: 70 },
+      { exerciseId: "e005", targetSets: 3, targetReps: 10, targetWeight: 55 },
+      { exerciseId: "e027", targetSets: 3, targetReps: 45, targetWeight: 0  },
+    ],
+  },
 ];
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -420,6 +484,88 @@ const css = `
   .empty { text-align: center; padding: 24px 12px; color: var(--muted); }
   .emico { font-size: 24px; margin-bottom: 6px; opacity: 0.3; }
   .emtxt { font-size: 11px; letter-spacing: 1px; }
+
+  /* ── HOME ACTIONS ── */
+  .home-actions { display: flex; gap: 8px; margin-top: 12px; width: 100%; }
+  .homebtn {
+    flex: 1; background: var(--surface); border: 1px solid var(--border2);
+    color: var(--dim); font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; border-radius: var(--r);
+    padding: 10px 8px; cursor: pointer; transition: all 0.12s;
+  }
+  .homebtn:hover { border-color: var(--accent); color: var(--accent); background: var(--adim); }
+  .resumebtn {
+    width: 100%; background: var(--adim); border: 1px solid rgba(61,255,110,0.4);
+    color: var(--accent); font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; border-radius: var(--r);
+    padding: 10px; cursor: pointer; margin-bottom: 10px; transition: all 0.12s;
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+  .resumebtn:hover { background: rgba(61,255,110,0.18); }
+  @keyframes pulse-border { 0%,100%{border-color:rgba(61,255,110,0.4)} 50%{border-color:rgba(61,255,110,0.8)} }
+
+  /* ── FULL SCREENS (Explore / History) ── */
+  .xscreen { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+  .xhdr {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; background: var(--surface);
+    border-bottom: 1px solid var(--border2); flex-shrink: 0;
+  }
+  .backbtn {
+    background: none; border: none; color: var(--dim); cursor: pointer;
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+    letter-spacing: 1px; padding: 4px 0; transition: color 0.12s; flex-shrink: 0;
+  }
+  .backbtn:hover { color: var(--accent); }
+  .xtitle { font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); }
+  .xscroll { flex: 1; overflow-y: auto; padding: 8px 12px 20px; }
+  .xitem {
+    display: flex; align-items: center; gap: 8px; padding: 9px 9px;
+    background: var(--surf2); border-radius: var(--rsm); margin-bottom: 3px;
+    cursor: pointer; border: 1px solid var(--border); transition: all 0.1s;
+  }
+  .xitem:hover { border-color: rgba(61,255,110,0.4); }
+  .xarr { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+
+  /* ── EXERCISE DETAIL MODAL ── */
+  .exdetail { padding: 0 12px 24px; }
+  .exdetail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .equiptag {
+    font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 2px; border: 1px solid var(--border2); color: var(--dim);
+    background: var(--surf2);
+  }
+  .exdetail-desc { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+  /* ── HISTORY ── */
+  .histitem {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--rsm);
+    padding: 9px 10px; margin-bottom: 4px; cursor: pointer; transition: all 0.1s;
+  }
+  .histitem:hover { border-color: var(--border2); }
+  .histdate { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+  /* ── TOPBAR HOME BUTTON ── */
+  .homebtn-topbar {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; padding: 3px 6px; border-radius: var(--rsm);
+    transition: color 0.12s; text-transform: uppercase;
+  }
+  .homebtn-topbar:hover { color: var(--dim); }
+
+  /* ── TEMPLATE MODAL ── */
+  .tmpl-item {
+    display: flex; align-items: center; gap: 8px; padding: 9px 9px;
+    background: var(--surf2); border-radius: var(--rsm); margin-bottom: 4px;
+    cursor: pointer; border: 1px solid var(--border); transition: all 0.1s;
+  }
+  .tmpl-item:hover { border-color: rgba(61,255,110,0.4); }
+  .tmpl-info { flex: 1; min-width: 0; }
+  .tmpl-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .tmpl-exes { font-size: 9px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tmpl-arr { font-size: 14px; color: var(--accent); flex-shrink: 0; }
 `;
 
 // ── Rest Timer ────────────────────────────────────────────────────────────────
@@ -721,13 +867,22 @@ function Summary({ session, onNew }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ onStart }) {
+function Home({ onStart, onExplore, onHistory, hasActiveSession, onResume }) {
   const recent = storage.getSessions().slice(-3).reverse();
   return (
     <div className="home">
       <div className="homelogo">Lift<br/>Log</div>
       <div className="homesub">Track your gains</div>
-      <button className="startbtn" onClick={onStart}>Start Workout</button>
+      {hasActiveSession && (
+        <button className="resumebtn" onClick={onResume}>▶ Resume Workout</button>
+      )}
+      <button className="startbtn" onClick={onStart}>
+        {hasActiveSession ? "New Workout" : "Start Workout"}
+      </button>
+      <div className="home-actions">
+        <button className="homebtn" onClick={onHistory}>Past Sessions</button>
+        <button className="homebtn" onClick={onExplore}>Exercises</button>
+      </div>
       {recent.length>0 && (
         <div className="recent">
           <div className="reclbl">Recent</div>
@@ -749,6 +904,210 @@ function Home({ onStart }) {
   );
 }
 
+// ── Exercise Explore Screen ───────────────────────────────────────────────────
+function ExploreScreen({ allExercises, onBack }) {
+  const [search, setSearch]   = useState("");
+  const [cat, setCat]         = useState("all");
+  const [muscle, setMuscle]   = useState("all");
+  const [selected, setSelected] = useState(null);
+
+  const cats    = ["all","push","pull","legs","upper","lower","full body"];
+  const muscles = ["all","chest","back","shoulders","arms","legs","core"];
+
+  const filtered = allExercises.filter(ex =>
+    ex.name.toLowerCase().includes(search.toLowerCase())
+    && (cat==="all" || ex.category===cat)
+    && (muscle==="all" || ex.muscleGroup===muscle)
+  );
+  const grouped = filtered.reduce((a,ex) => { (a[ex.muscleGroup]=a[ex.muscleGroup]||[]).push(ex); return a; }, {});
+
+  return (
+    <div className="xscreen">
+      <div className="xhdr">
+        <button className="backbtn" onClick={onBack}>← Back</button>
+        <span className="xtitle">Exercise Library</span>
+      </div>
+      <div style={{flexShrink:0,padding:"8px 12px 0"}}>
+        <div className="msearch" style={{margin:0}}>
+          <span className="searchic">🔍</span>
+          <input className="searchin" placeholder="Search exercises..." value={search} onChange={e=>setSearch(e.target.value)} />
+        </div>
+      </div>
+      <div className="frow" style={{padding:"8px 12px 0"}}>
+        {cats.map(c=><button key={c} className={`fchip ${cat===c?"on":""}`} onClick={()=>setCat(c)}>{c==="all"?"ALL":c.toUpperCase()}</button>)}
+      </div>
+      <div className="frow" style={{paddingTop:4,paddingBottom:4}}>
+        {muscles.map(m=><button key={m} className={`fchip ${muscle===m?"on":""}`}
+          style={muscle===m&&m!=="all"?{background:MUSCLE_COLORS[m]?.bg,borderColor:MUSCLE_COLORS[m]?.border,color:MUSCLE_COLORS[m]?.text}:{}}
+          onClick={()=>setMuscle(m)}>{m==="all"?"ALL":m.toUpperCase()}</button>)}
+      </div>
+      <div className="xscroll">
+        {Object.keys(grouped).length===0 && <div className="empty"><div className="emico">🔍</div><div className="emtxt">No results</div></div>}
+        {Object.entries(grouped).map(([grp,exs]) => {
+          const mc = MUSCLE_COLORS[grp]||{};
+          return (
+            <div key={grp}>
+              <div className="grplbl" style={{color:mc.text||"var(--muted)"}}>{grp.toUpperCase()}</div>
+              {exs.map(ex=>(
+                <div key={ex.id} className="xitem" onClick={()=>setSelected(ex)}>
+                  <div className="binfo">
+                    <div className="bname">{ex.name}</div>
+                    <div className="bmeta">
+                      <span className="mtag" style={{background:mc.bg,borderColor:mc.border,color:mc.text,fontSize:7}}>{grp}</span>
+                      <span className="bequip">{ex.equipment}</span>
+                    </div>
+                  </div>
+                  <div className="xarr">›</div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      {selected && (
+        <div className="moverlay" onClick={()=>setSelected(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="mhandle" />
+            <div className="mhdr">
+              <span className="mtitle">{selected.name}</span>
+              <button className="mclosebtn" onClick={()=>setSelected(null)}>✕</button>
+            </div>
+            <div className="exdetail">
+              <div className="exdetail-tags">
+                <span className="mtag" style={{background:MUSCLE_COLORS[selected.muscleGroup]?.bg,borderColor:MUSCLE_COLORS[selected.muscleGroup]?.border,color:MUSCLE_COLORS[selected.muscleGroup]?.text}}>{selected.muscleGroup}</span>
+                <span className="equiptag">{selected.equipment}</span>
+                <span className="equiptag">{selected.category}</span>
+              </div>
+              {selected.description
+                ? <div className="exdetail-desc">{selected.description}</div>
+                : <div className="exdetail-desc" style={{color:"var(--muted)"}}>No description available.</div>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── History Screen ─────────────────────────────────────────────────────────────
+function HistoryDetail({ session, onBack }) {
+  const totalSets = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
+  const totalVol  = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+s.reps*s.weight,0),0);
+  const dur       = session.endTime ? session.endTime - session.startTime : 0;
+  return (
+    <div className="xscreen">
+      <div className="xhdr">
+        <button className="backbtn" onClick={onBack}>← Back</button>
+        <span className="xtitle" style={{fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session.name}</span>
+      </div>
+      <div className="xscroll">
+        <div className="statgrid" style={{marginBottom:12}}>
+          <div className="statcard"><div className="statval">{fmtMs(dur)}</div><div className="statlbl">Duration</div></div>
+          <div className="statcard"><div className="statval">{totalSets}</div><div className="statlbl">Sets Done</div></div>
+          <div className="statcard"><div className="statval">{session.exercises.length}</div><div className="statlbl">Exercises</div></div>
+          <div className="statcard"><div className="statval">{totalVol>0?`${(totalVol/1000).toFixed(1)}t`:"—"}</div><div className="statlbl">Volume</div></div>
+        </div>
+        <div className="sumexes">
+          {session.exercises.map(e=>{
+            const done=e.sets.filter(s=>s.done);
+            const top=done.length?Math.max(...done.map(s=>s.weight)):0;
+            const mc=MUSCLE_COLORS[e.muscleGroup]||{};
+            return (
+              <div key={e.entryId} className="seitem">
+                <div>
+                  <div className="sename">{e.name}</div>
+                  <div className="semeta">{done.length} sets{top>0?` · ${top}kg`:""}</div>
+                </div>
+                <span className="mtag" style={{background:mc.bg,borderColor:mc.border,color:mc.text}}>{e.muscleGroup}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HistoryScreen({ onBack }) {
+  const [sessions, setSessions] = useState([]);
+  const [selected, setSelected] = useState(null);
+  useEffect(() => { setSessions(storage.getSessions().slice().reverse()); }, []);
+
+  if (selected) return <HistoryDetail session={selected} onBack={()=>setSelected(null)} />;
+
+  return (
+    <div className="xscreen">
+      <div className="xhdr">
+        <button className="backbtn" onClick={onBack}>← Back</button>
+        <span className="xtitle">History</span>
+      </div>
+      <div className="xscroll">
+        {sessions.length===0 && (
+          <div className="empty" style={{marginTop:40}}>
+            <div className="emico">📋</div>
+            <div className="emtxt">No completed workouts yet</div>
+          </div>
+        )}
+        {sessions.map(s=>{
+          const vol=s.exercises?.reduce((a,e)=>a+(e.sets||[]).filter(x=>x.done).reduce((b,x)=>b+x.reps*x.weight,0),0)||0;
+          const dur=s.endTime?s.endTime-s.startTime:0;
+          const totalSets=s.exercises?.reduce((a,e)=>a+(e.sets||[]).filter(x=>x.done).length,0)||0;
+          return (
+            <div key={s.id} className="histitem" onClick={()=>setSelected(s)}>
+              <div style={{flex:1,minWidth:0}}>
+                <div className="recname">{s.name}</div>
+                <div className="recmeta">
+                  {fmtDate(new Date(s.startTime))} · {s.exercises?.length||0} exercises · {totalSets} sets{dur>0?` · ${fmtMs(dur)}`:""}
+                </div>
+              </div>
+              {vol>0 && <div className="recvol">{(vol/1000).toFixed(1)}t</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Template Picker Modal ─────────────────────────────────────────────────────
+function TemplateModal({ allExercises, onStart, onClose }) {
+  return (
+    <div className="moverlay" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="mhandle" />
+        <div className="mhdr">
+          <span className="mtitle">Start Workout</span>
+          <button className="mclosebtn" onClick={onClose}>✕</button>
+        </div>
+        <div className="blist" style={{padding:"4px 12px 20px"}}>
+          <div className="grplbl">Quick Start</div>
+          <div className="tmpl-item" onClick={()=>onStart(null)}>
+            <div className="tmpl-info">
+              <div className="tmpl-name">Empty Workout</div>
+              <div className="tmpl-exes">Start fresh — add exercises manually</div>
+            </div>
+            <div className="tmpl-arr">+</div>
+          </div>
+          <div className="grplbl" style={{marginTop:10}}>Templates</div>
+          {TEMPLATES.map(t=>{
+            const names = t.exercises.map(te=>allExercises.find(e=>e.id===te.exerciseId)?.name).filter(Boolean);
+            return (
+              <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
+                <div className="tmpl-info">
+                  <div className="tmpl-name">{t.name}</div>
+                  <div className="tmpl-exes">{names.join(" · ")}</div>
+                </div>
+                <div className="tmpl-arr">→</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function LiftLog() {
   const [screen, setScreen]             = useState("home");
@@ -757,6 +1116,7 @@ export default function LiftLog() {
   const [showBrowser, setShowBrowser]   = useState(false);
   const [showCustom, setShowCustom]     = useState(false);
   const [showRest, setShowRest]         = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [allExercises, setAllExercises] = useState([]);
   const [elapsed, setElapsed]           = useState(0);
   const timerRef = useRef(null);
@@ -770,10 +1130,24 @@ export default function LiftLog() {
     return () => clearInterval(timerRef.current);
   }, [screen, session]);
 
-  const startSession = () => {
+  const startSession = (template) => {
     const now = Date.now();
-    const s = { id:uid(), name:"Workout · "+fmtDate(), startTime:now, exercises:[] };
-    setSession(s); setExercises([]); setElapsed(0); setScreen("session");
+    const name = template ? template.name + " · " + fmtDate() : "Workout · " + fmtDate();
+    const s = { id:uid(), name, startTime:now, exercises:[] };
+    let entries = [];
+    if (template) {
+      entries = template.exercises.map(te => {
+        const ex = allExercises.find(e => e.id===te.exerciseId);
+        if (!ex) return null;
+        const entry = makeEntry(ex);
+        entry.targetSets   = te.targetSets;
+        entry.targetReps   = te.targetReps;
+        entry.targetWeight = te.targetWeight;
+        entry.sets = Array.from({length: te.targetSets}, () => makeSet(te.targetReps, te.targetWeight));
+        return entry;
+      }).filter(Boolean);
+    }
+    setSession(s); setExercises(entries); setElapsed(0); setScreen("session");
   };
 
   const addExercise    = (ex) => setExercises(p=>[...p, makeEntry(ex)]);
@@ -785,9 +1159,11 @@ export default function LiftLog() {
     storage.saveSession(done); setSession(done); setScreen("summary");
   };
   const discard = () => { setExercises([]); setSession(null); setScreen("home"); };
+  const goHome  = () => setScreen("home");
 
   const addedIds = new Set(exercises.map(e=>e.exerciseId));
   const doneSets = exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
+  const hasActiveSession = session && !session.endTime;
 
   return (
     <>
@@ -796,7 +1172,7 @@ export default function LiftLog() {
 
         {screen==="session" && (
           <div className="topbar">
-            <div className="logo">Lift Log</div>
+            <button className="homebtn-topbar" onClick={goHome}>← Home</button>
             <div className="topbar-r">
               <div className="live-dot" />
               <div className="clock">{fmtMs(elapsed)}</div>
@@ -806,7 +1182,17 @@ export default function LiftLog() {
           </div>
         )}
 
-        {screen==="home"    && <Home onStart={startSession} />}
+        {screen==="home" && (
+          <Home
+            onStart={()=>setShowTemplates(true)}
+            onExplore={()=>setScreen("explore")}
+            onHistory={()=>setScreen("history")}
+            hasActiveSession={hasActiveSession}
+            onResume={()=>setScreen("session")}
+          />
+        )}
+        {screen==="explore" && <ExploreScreen allExercises={allExercises} onBack={()=>setScreen("home")} />}
+        {screen==="history" && <HistoryScreen onBack={()=>setScreen("home")} />}
         {screen==="summary" && session && <Summary session={session} onNew={()=>{setScreen("home");setSession(null);}} />}
 
         {screen==="session" && session && <>
@@ -833,6 +1219,13 @@ export default function LiftLog() {
           </div>
         </>}
 
+        {showTemplates && (
+          <TemplateModal
+            allExercises={allExercises}
+            onStart={t=>{setShowTemplates(false);startSession(t);}}
+            onClose={()=>setShowTemplates(false)}
+          />
+        )}
         {showBrowser && (
           <Browser allExercises={allExercises} addedIds={addedIds}
             onAdd={ex=>{addExercise(ex);}}
