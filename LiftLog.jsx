@@ -768,12 +768,13 @@ function RestTimer({ endTime, total, onSetTotal, onClose, onSkip }) {
 }
 
 // ── Exercise Card ─────────────────────────────────────────────────────────────
-function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest, restRem }) {
+function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest, restRem, editMode }) {
   const mc = MUSCLE_COLORS[entry.muscleGroup] || { bg:"#111", border:"#333", text:"#888" };
   const doneCt = entry.sets.filter(s => s.done).length;
 
   const upd = (id, field, val) => onUpdate({ ...entry, sets: entry.sets.map(s => s.id===id ? {...s,[field]:val} : s) });
   const tick = (id) => {
+    if (editMode) return;
     const wasDone = entry.sets.find(s => s.id===id)?.done;
     onUpdate({ ...entry, sets: entry.sets.map(s => s.id===id ? {...s,done:!s.done} : s) });
   };
@@ -781,8 +782,8 @@ function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest
   const addSet = () => onUpdate({ ...entry, sets: [...entry.sets, makeSet(entry.targetReps, entry.targetWeight)] });
   const rmSet = (id) => { if (entry.sets.length<=1) return; onUpdate({ ...entry, sets: entry.sets.filter(s=>s.id!==id) }); };
 
-  const swapOpts = allExercises.filter(ex => entry.similarExercises.includes(ex.id) && !addedIds.has(ex.id));
-  const doSwap = (ex) => onUpdate({ ...makeEntry(ex), entryId: entry.entryId, expanded: true });
+  const swapOpts = editMode ? [] : allExercises.filter(ex => entry.similarExercises.includes(ex.id) && !addedIds.has(ex.id));
+  const doSwap = (ex) => { if (editMode) return; onUpdate({ ...makeEntry(ex), entryId: entry.entryId, expanded: true }); };
 
   return (
     <div className={`excard ${entry.expanded?"open":""}`}>
@@ -797,7 +798,8 @@ function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest
       </div>
 
       {entry.expanded && <>
-        {entry.showSwap && (
+        {/* Hide swap panel in edit mode */}
+        {!editMode && entry.showSwap && (
           <div className="swappanel">
             <div className="swaplbl">Swap — same muscle</div>
             {swapOpts.length===0
@@ -832,13 +834,16 @@ function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest
                 <NumInput className="sin w" value={set.weight} step={2.5} onChange={v=>upd(set.id,"weight",v)} />
                 <span className="sunit">kg</span>
               </div>
-              {set.done && (
+              {/* Hide rest and set completed buttons in edit mode */}
+              {!editMode && set.done && (
                 <button className="restbtn" onClick={()=>onStartRest()}>
                   {restRem != null && restRem > 0 ? `⏱ ${pad(Math.floor(restRem/60))}:${pad(restRem%60)}` : "⏱ Rest"}
                 </button>
               )}
               <button className="rmbtn" onClick={()=>rmSet(set.id)}>−</button>
-              <button className={`tickbtn ${set.done?"on":""}`} onClick={()=>tick(set.id)}>✓</button>
+              {!editMode && (
+                <button className={`tickbtn ${set.done?"on":""}`} onClick={()=>tick(set.id)}>✓</button>
+              )}
             </div>
           ))}
           <button className="addbtn" onClick={addSet}>+ Add Set</button>
@@ -1220,9 +1225,17 @@ function SessionEditScreen({ origSession, onSave, onCancel }) {
           <div className="empty"><div className="emico">💪</div><div className="emtxt">Add exercises to begin</div></div>
         )}
         {exercises.map(entry=>(
-          <ExCard key={entry.entryId} entry={entry} allExercises={allExercises}
-            onUpdate={updateExercise} onRemove={()=>removeExercise(entry.entryId)}
-            addedIds={addedIds} onStartRest={()=>{}} restRem={null} />
+          <ExCard
+            key={entry.entryId}
+            entry={entry}
+            allExercises={allExercises}
+            onUpdate={updateExercise}
+            onRemove={()=>removeExercise(entry.entryId)}
+            addedIds={addedIds}
+            onStartRest={null}
+            restRem={null}
+            editMode={true}
+          />
         ))}
         <div className="addwrap">
           <button className="addexbtn" onClick={()=>setShowBrowser(true)}>+ Add Exercise</button>
@@ -1256,8 +1269,14 @@ function HistoryScreen({ onBack }) {
   if (selected) return (
     <HistoryDetail
       session={selected}
-      onBack={()=>setSelected(null)}
-      onSessionUpdate={(u) => { setSessions(s=>s.map(x=>x.id===u.id?u:x)); setSelected(u); }}
+      onBack={(updated) => {
+        if (updated && updated.id) {
+          setSessions(s => s.map(x => x.id === updated.id ? updated : x));
+          setSelected(updated);
+        } else {
+          setSelected(null);
+        }
+      }}
     />
   );
 
