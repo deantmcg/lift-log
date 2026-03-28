@@ -1,0 +1,855 @@
+import { useState, useEffect, useRef } from "react";
+
+// ── Exercise data ─────────────────────────────────────────────────────────────
+const EXERCISES_JSON = [
+  { id: "e001", name: "Bench Press", category: "push", muscleGroup: "chest", equipment: "barbell", similarExercises: ["e002","e003","e004"] },
+  { id: "e002", name: "Incline Bench Press", category: "push", muscleGroup: "chest", equipment: "barbell", similarExercises: ["e001","e003","e004"] },
+  { id: "e003", name: "Dumbbell Fly", category: "push", muscleGroup: "chest", equipment: "dumbbell", similarExercises: ["e001","e002","e004"] },
+  { id: "e004", name: "Cable Crossover", category: "push", muscleGroup: "chest", equipment: "cable", similarExercises: ["e001","e002","e003"] },
+  { id: "e005", name: "Overhead Press", category: "push", muscleGroup: "shoulders", equipment: "barbell", similarExercises: ["e006","e007"] },
+  { id: "e006", name: "Lateral Raise", category: "push", muscleGroup: "shoulders", equipment: "dumbbell", similarExercises: ["e005","e007"] },
+  { id: "e007", name: "Arnold Press", category: "push", muscleGroup: "shoulders", equipment: "dumbbell", similarExercises: ["e005","e006"] },
+  { id: "e008", name: "Tricep Pushdown", category: "push", muscleGroup: "arms", equipment: "cable", similarExercises: ["e009","e010"] },
+  { id: "e009", name: "Skull Crusher", category: "push", muscleGroup: "arms", equipment: "barbell", similarExercises: ["e008","e010"] },
+  { id: "e010", name: "Dips", category: "push", muscleGroup: "arms", equipment: "bodyweight", similarExercises: ["e008","e009"] },
+  { id: "e011", name: "Deadlift", category: "pull", muscleGroup: "back", equipment: "barbell", similarExercises: ["e012","e013"] },
+  { id: "e012", name: "Barbell Row", category: "pull", muscleGroup: "back", equipment: "barbell", similarExercises: ["e011","e013","e014"] },
+  { id: "e013", name: "Pull-up", category: "pull", muscleGroup: "back", equipment: "bodyweight", similarExercises: ["e012","e014"] },
+  { id: "e014", name: "Lat Pulldown", category: "pull", muscleGroup: "back", equipment: "cable", similarExercises: ["e013","e012"] },
+  { id: "e015", name: "Seated Cable Row", category: "pull", muscleGroup: "back", equipment: "cable", similarExercises: ["e012","e014"] },
+  { id: "e016", name: "Barbell Curl", category: "pull", muscleGroup: "arms", equipment: "barbell", similarExercises: ["e017","e018"] },
+  { id: "e017", name: "Hammer Curl", category: "pull", muscleGroup: "arms", equipment: "dumbbell", similarExercises: ["e016","e018"] },
+  { id: "e018", name: "Preacher Curl", category: "pull", muscleGroup: "arms", equipment: "cable", similarExercises: ["e016","e017"] },
+  { id: "e019", name: "Squat", category: "legs", muscleGroup: "legs", equipment: "barbell", similarExercises: ["e020","e021","e022"] },
+  { id: "e020", name: "Leg Press", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e019","e021"] },
+  { id: "e021", name: "Hack Squat", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e019","e020"] },
+  { id: "e022", name: "Romanian Deadlift", category: "legs", muscleGroup: "legs", equipment: "barbell", similarExercises: ["e023","e019"] },
+  { id: "e023", name: "Leg Curl", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e022","e024"] },
+  { id: "e024", name: "Leg Extension", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e023","e020"] },
+  { id: "e025", name: "Calf Raise", category: "legs", muscleGroup: "legs", equipment: "machine", similarExercises: ["e026"] },
+  { id: "e026", name: "Standing Calf Raise", category: "legs", muscleGroup: "legs", equipment: "dumbbell", similarExercises: ["e025"] },
+  { id: "e027", name: "Plank", category: "full body", muscleGroup: "core", equipment: "bodyweight", similarExercises: ["e028","e029"] },
+  { id: "e028", name: "Ab Rollout", category: "full body", muscleGroup: "core", equipment: "bodyweight", similarExercises: ["e027","e029"] },
+  { id: "e029", name: "Cable Crunch", category: "full body", muscleGroup: "core", equipment: "cable", similarExercises: ["e027","e028"] },
+];
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+const storage = {
+  getSessions: () => { try { return JSON.parse(localStorage.getItem("ll_sessions") || "[]"); } catch { return []; } },
+  saveSession: (s) => { const all = storage.getSessions().filter(x => x.id !== s.id); localStorage.setItem("ll_sessions", JSON.stringify([...all, s])); },
+  getExercises: () => {
+    const custom = (() => { try { return JSON.parse(localStorage.getItem("ll_custom_exercises") || "[]"); } catch { return []; } })();
+    return [...EXERCISES_JSON, ...custom];
+  },
+  saveCustomExercise: (ex) => {
+    const cur = (() => { try { return JSON.parse(localStorage.getItem("ll_custom_exercises") || "[]"); } catch { return []; } })();
+    localStorage.setItem("ll_custom_exercises", JSON.stringify([...cur, ex]));
+  },
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const pad = (n) => (n < 10 ? "0" + n : String(n));
+const fmtMs = (ms) => { const s = Math.floor(Math.abs(ms) / 1000); return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; };
+const fmtDate = (d = new Date()) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+const makeSet = (reps, weight) => ({ id: uid(), reps, weight, done: false });
+const makeEntry = (ex) => ({
+  entryId: uid(), exerciseId: ex.id, name: ex.name,
+  muscleGroup: ex.muscleGroup, category: ex.category, equipment: ex.equipment,
+  similarExercises: ex.similarExercises || [],
+  targetSets: 3, targetReps: 8, targetWeight: 60,
+  sets: [makeSet(8, 60), makeSet(8, 60), makeSet(8, 60)],
+  expanded: true, showSwap: false,
+});
+
+const MUSCLE_COLORS = {
+  chest:     { bg: "#0f2a18", border: "#1e5c32", text: "#3dff6e" },
+  back:      { bg: "#0f1f2a", border: "#1e4a5c", text: "#3db8ff" },
+  shoulders: { bg: "#1a2a0f", border: "#3d5c1e", text: "#8fff3d" },
+  arms:      { bg: "#1f0f2a", border: "#4a1e5c", text: "#c03dff" },
+  legs:      { bg: "#0f2a1f", border: "#1e5c4a", text: "#3dffb8" },
+  core:      { bg: "#2a1f0f", border: "#5c4a1e", text: "#ffb83d" },
+};
+
+const REST_PRESETS = [60, 90, 120, 180];
+
+// ── CSS ───────────────────────────────────────────────────────────────────────
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #050805;
+    --surface:  #090e09;
+    --surf2:    #0e160e;
+    --surf3:    #131c13;
+    --border:   #162016;
+    --border2:  #1e301e;
+    --accent:   #3dff6e;
+    --accent2:  #2dd45c;
+    --adim:     #3dff6e18;
+    --aglow:    #3dff6e28;
+    --text:     #c8e8c8;
+    --muted:    #3a5a3a;
+    --dim:      #6a8a6a;
+    --danger:   #ff4040;
+    --warn:     #ffaa33;
+    --r:        5px;
+    --rsm:      3px;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; min-height: 100vh; }
+
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,8,0,0.04) 3px, rgba(0,8,0,0.04) 4px);
+  }
+
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+  @media (min-width: 768px) { .app { max-width: 620px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); } }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 12px; background: var(--surface);
+    border-bottom: 1px solid var(--border2);
+  }
+  .logo { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
+  .topbar-r { display: flex; align-items: center; gap: 8px; }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: blink 1s step-end infinite; flex-shrink: 0; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .clock { font-family: 'Share Tech Mono', monospace; font-size: 15px; color: var(--accent); }
+  .sname-input {
+    background: transparent; border: none; outline: none;
+    font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+    color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+    width: 130px; text-align: right; cursor: text;
+  }
+  .sname-input:focus { color: var(--dim); }
+  .sname-input::placeholder { color: var(--muted); }
+
+  /* ── REST OVERLAY ── */
+  .rest-overlay {
+    position: fixed; inset: 0; z-index: 200; background: rgba(0,3,0,0.94);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .rest-lbl { font-size: 10px; letter-spacing: 5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
+  .rest-ring { position: relative; width: 170px; height: 170px; margin-bottom: 18px; }
+  .rest-svg { transform: rotate(-90deg); }
+  .rest-bg  { fill: none; stroke: var(--border2); stroke-width: 5; }
+  .rest-arc { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+  .rest-arc.urgent { stroke: var(--warn); }
+  .rest-arc.overtime { stroke: var(--danger); }
+  .rest-num {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace; font-size: 44px; color: var(--accent); letter-spacing: 1px;
+  }
+  .rest-num.urgent { color: var(--warn); }
+  .rest-num.overtime { color: var(--danger); }
+  .rest-presets { display: flex; gap: 6px; margin-bottom: 14px; }
+  .rp-btn {
+    background: var(--surf2); border: 1px solid var(--border2); color: var(--dim);
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    padding: 4px 12px; border-radius: var(--r); cursor: pointer; letter-spacing: 1px; transition: all 0.12s;
+  }
+  .rp-btn:hover, .rp-btn.active { background: var(--adim); border-color: var(--accent); color: var(--accent); }
+  .rest-btns { display: flex; gap: 8px; }
+  .rb {
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px;
+    padding: 9px 22px; border-radius: var(--r); cursor: pointer; text-transform: uppercase; border: 1px solid; transition: all 0.12s;
+  }
+  .rb-close { background: transparent; border-color: var(--border2); color: var(--dim); }
+  .rb-close:hover { border-color: var(--danger); color: var(--danger); }
+  .rb-skip  { background: var(--adim); border-color: var(--accent); color: var(--accent); }
+  .rb-skip:hover { background: var(--accent); color: #000; }
+  .rest-done { font-size: 12px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+
+  /* ── EXERCISES SECTION ── */
+  .exsec { padding: 6px 10px 0; flex: 1; }
+  .secbar { display: flex; align-items: center; justify-content: space-between; padding: 2px 2px 5px; }
+  .seclbl { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .secstat { font-size: 9px; color: var(--accent); letter-spacing: 2px; font-weight: 700; }
+
+  /* ── EXERCISE CARD ── */
+  .excard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 5px; overflow: hidden; transition: border-color 0.15s; }
+  .excard.open { border-color: var(--border2); }
+
+  .exhdr { display: flex; align-items: center; gap: 7px; padding: 6px 10px; cursor: pointer; min-height: 34px; }
+  .exname { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.3px; }
+  .mtag { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 1px 5px; border-radius: 2px; border: 1px solid; flex-shrink: 0; }
+  .hdr-r { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .pips { display: flex; gap: 2px; align-items: center; }
+  .pip { width: 4px; height: 4px; border-radius: 50%; background: var(--border2); transition: background 0.15s; }
+  .pip.on { background: var(--accent); box-shadow: 0 0 3px var(--aglow); }
+  .hbtn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 12px; padding: 2px 3px; border-radius: 2px; line-height: 1; transition: color 0.12s; }
+  .hbtn:hover { color: var(--dim); }
+  .hbtn.sw:hover { color: var(--accent); }
+  .hbtn.dl:hover { color: var(--danger); }
+
+  /* ── TARGET ROW ── */
+  .trow { display: flex; align-items: center; gap: 5px; padding: 4px 10px 5px; border-top: 1px solid var(--border); }
+  .tlbl { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; font-weight: 700; }
+  .nin {
+    width: 36px; background: var(--surf2); border: 1px solid var(--border2);
+    border-radius: var(--rsm); color: var(--text); font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; padding: 3px 3px; text-align: center; outline: none; transition: border-color 0.12s;
+  }
+  .nin:focus { border-color: var(--accent); }
+  .nin::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .nin.w { width: 44px; }
+  .sp { font-size: 9px; color: var(--muted); }
+  .apbtn {
+    margin-left: auto; background: var(--adim); border: 1px solid rgba(61,255,110,0.3);
+    color: var(--accent); font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700;
+    padding: 2px 9px; border-radius: var(--rsm); cursor: pointer; letter-spacing: 1px;
+    text-transform: uppercase; transition: background 0.12s; white-space: nowrap;
+  }
+  .apbtn:hover { background: rgba(61,255,110,0.2); }
+
+  /* ── SET ROWS ── */
+  .slist { padding: 2px 10px 7px; display: flex; flex-direction: column; gap: 3px; }
+  .srow {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surf2); border-radius: var(--rsm);
+    padding: 4px 7px; border: 1px solid transparent; transition: border-color 0.12s;
+  }
+  .srow.done { border-color: rgba(61,255,110,0.2); background: #0a150a; }
+  .snum { font-size: 8px; font-weight: 700; color: var(--muted); width: 16px; letter-spacing: 1px; flex-shrink: 0; }
+  .sinputs { display: flex; align-items: center; gap: 3px; flex: 1; }
+  .sin {
+    width: 36px; background: var(--surf3); border: 1px solid var(--border2);
+    border-radius: 2px; color: var(--text); font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; padding: 2px 3px; text-align: center; outline: none;
+  }
+  .sin:focus { border-color: var(--accent); }
+  .sin::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .sin.w { width: 42px; }
+  .ssep { font-size: 9px; color: var(--muted); }
+  .sunit { font-size: 8px; color: var(--muted); }
+  .restbtn {
+    background: var(--surf3); border: 1px solid var(--border2);
+    color: var(--muted); font-size: 10px; padding: 2px 6px;
+    border-radius: var(--rsm); cursor: pointer;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 0.5px;
+    transition: all 0.12s; white-space: nowrap;
+  }
+  .restbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .rmbtn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 11px; padding: 1px 2px; line-height: 1; transition: color 0.12s; }
+  .rmbtn:hover { color: var(--danger); }
+  .tickbtn {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid var(--border2); background: none;
+    cursor: pointer; color: var(--muted); font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s; flex-shrink: 0;
+  }
+  .tickbtn.on { background: var(--accent); border-color: var(--accent); color: #000; box-shadow: 0 0 6px var(--aglow); }
+  .addbtn {
+    width: 100%; background: none; border: 1px dashed var(--border2);
+    border-radius: var(--rsm); color: var(--muted);
+    font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700;
+    padding: 4px; cursor: pointer; letter-spacing: 1.5px; text-transform: uppercase;
+    transition: all 0.12s; margin-top: 1px;
+  }
+  .addbtn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── SWAP PANEL ── */
+  .swappanel { padding: 3px 10px 7px; border-top: 1px solid var(--border); }
+  .swaplbl { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 700; }
+  .swaplist { display: flex; flex-direction: column; gap: 3px; }
+  .swapitem {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surf2); border-radius: var(--rsm); padding: 6px 9px;
+    cursor: pointer; border: 1px solid var(--border); transition: all 0.12s;
+    font-size: 12px; font-weight: 600;
+  }
+  .swapitem:hover { border-color: rgba(61,255,110,0.5); color: var(--accent); }
+  .swarr { font-size: 11px; color: var(--accent); }
+
+  /* ── ADD EXERCISE ── */
+  .addwrap { padding: 5px 10px 3px; }
+  .addexbtn {
+    width: 100%; background: var(--surface); border: 1px dashed var(--border2);
+    border-radius: var(--r); color: var(--muted);
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    padding: 9px; cursor: pointer; letter-spacing: 2px; text-transform: uppercase;
+    transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .addexbtn:hover { border-color: var(--accent); color: var(--accent); background: var(--adim); }
+
+  /* ── BOTTOM BAR ── */
+  .botbar { padding: 6px 10px 18px; display: flex; gap: 6px; }
+  .finbtn {
+    flex: 1; background: var(--accent); color: #000;
+    font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700;
+    letter-spacing: 3px; border: none; border-radius: var(--r);
+    padding: 11px; cursor: pointer; text-transform: uppercase;
+    transition: opacity 0.12s; box-shadow: 0 0 12px var(--aglow);
+  }
+  .finbtn:hover { opacity: 0.88; }
+  .finbtn:disabled { opacity: 0.2; cursor: not-allowed; box-shadow: none; }
+  .discbtn {
+    background: var(--surface); border: 1px solid var(--border2); color: var(--muted);
+    font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+    border-radius: var(--r); padding: 11px 12px; cursor: pointer;
+    letter-spacing: 1px; transition: all 0.12s; text-transform: uppercase;
+  }
+  .discbtn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── BROWSER MODAL ── */
+  .moverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 100; display: flex; align-items: flex-end; }
+  .modal {
+    width: 100%; max-width: 480px; margin: 0 auto;
+    background: var(--surface); border-radius: 7px 7px 0 0;
+    max-height: 88vh; display: flex; flex-direction: column;
+    border-top: 1px solid var(--border2);
+    animation: sup 0.2s cubic-bezier(0.16,1,0.3,1);
+  }
+  @media (min-width: 768px) { .modal { max-width: 620px; } }
+  @keyframes sup { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .mhandle { width: 28px; height: 3px; background: var(--border2); border-radius: 2px; margin: 7px auto 5px; }
+  .mhdr { padding: 0 12px 7px; display: flex; align-items: center; justify-content: space-between; }
+  .mtitle { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); }
+  .mclosebtn { background: var(--surf2); border: 1px solid var(--border2); color: var(--muted); width: 24px; height: 24px; border-radius: 3px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .msearch { margin: 0 12px 5px; position: relative; }
+  .searchin {
+    width: 100%; background: var(--surf2); border: 1px solid var(--border2);
+    border-radius: var(--r); color: var(--text);
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 6px 10px 6px 28px; outline: none; letter-spacing: 0.5px;
+  }
+  .searchin:focus { border-color: var(--accent); }
+  .searchic { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 11px; }
+  .frow { display: flex; gap: 4px; padding: 0 12px 5px; overflow-x: auto; scrollbar-width: none; }
+  .frow::-webkit-scrollbar { display: none; }
+  .fchip {
+    flex-shrink: 0; background: var(--surf2); border: 1px solid var(--border);
+    border-radius: 2px; color: var(--muted); font-size: 9px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; cursor: pointer;
+    transition: all 0.1s; font-family: 'Rajdhani', sans-serif;
+  }
+  .fchip.on { background: var(--adim); border-color: var(--accent); color: var(--accent); }
+  .blist { flex: 1; overflow-y: auto; padding: 0 12px 14px; }
+  .grplbl { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); padding: 6px 0 3px; font-weight: 700; }
+  .bitem {
+    display: flex; align-items: center; gap: 8px; padding: 7px 9px;
+    background: var(--surf2); border-radius: var(--rsm); margin-bottom: 3px;
+    cursor: pointer; border: 1px solid var(--border); transition: all 0.1s;
+  }
+  .bitem:hover { border-color: rgba(61,255,110,0.4); }
+  .bitem.added { border-color: var(--accent); opacity: 0.55; cursor: default; }
+  .binfo { flex: 1; min-width: 0; }
+  .bname { font-size: 12px; font-weight: 700; }
+  .bmeta { display: flex; gap: 6px; margin-top: 2px; align-items: center; }
+  .bequip { font-size: 9px; color: var(--muted); }
+  .bstatus { font-size: 12px; color: var(--accent); font-weight: 700; }
+
+  /* ── CUSTOM EXERCISE ── */
+  .cmodal {
+    background: var(--surface); border-radius: 7px 7px 0 0;
+    width: 100%; max-width: 480px; margin: 0 auto; padding: 12px 12px 20px;
+    animation: sup 0.2s cubic-bezier(0.16,1,0.3,1); border-top: 1px solid var(--border2);
+  }
+  @media (min-width: 768px) { .cmodal { max-width: 620px; } }
+  .ctitle { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .flbl { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; font-weight: 700; }
+  .fin {
+    width: 100%; background: var(--surf2); border: 1px solid var(--border2);
+    border-radius: var(--r); color: var(--text);
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 7px 9px; outline: none; margin-bottom: 10px;
+  }
+  .fin:focus { border-color: var(--accent); }
+  .chipgrp { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .selchip {
+    background: var(--surf2); border: 1px solid var(--border);
+    border-radius: 2px; color: var(--muted); font-size: 10px; font-weight: 700;
+    padding: 3px 9px; cursor: pointer; transition: all 0.1s; text-transform: capitalize;
+    font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;
+  }
+  .selchip.on { background: var(--adim); border-color: var(--accent); color: var(--accent); }
+  .creatbtn {
+    width: 100%; background: var(--accent); color: #000;
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; border: none;
+    border-radius: var(--r); padding: 10px; cursor: pointer; margin-top: 3px;
+  }
+  .cancbtn { width: 100%; background: none; border: none; color: var(--muted); font-family: 'Rajdhani', sans-serif; font-size: 11px; padding: 8px; cursor: pointer; letter-spacing: 1px; }
+
+  /* ── SUMMARY ── */
+  .summary { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+  .sumhdr { text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .sumicon { font-size: 30px; margin-bottom: 3px; }
+  .sumtitle { font-size: 24px; font-weight: 700; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; }
+  .sumdate { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-top: 1px; text-transform: uppercase; }
+  .statgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 12px; }
+  .statcard { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); padding: 10px; text-align: center; }
+  .statval { font-family: 'Share Tech Mono', monospace; font-size: 22px; color: var(--accent); }
+  .statlbl { font-size: 8px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; font-weight: 700; }
+  .prsec { margin-bottom: 10px; }
+  .pritem { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid rgba(61,255,110,0.25); border-radius: var(--rsm); padding: 6px 9px; margin-bottom: 3px; }
+  .prname { font-size: 12px; font-weight: 700; flex: 1; }
+  .prw { font-size: 12px; color: var(--accent); font-weight: 700; font-family: 'Share Tech Mono', monospace; }
+  .sumexes { margin-bottom: 12px; }
+  .seitem { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rsm); padding: 7px 9px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+  .sename { font-size: 12px; font-weight: 700; }
+  .semeta { font-size: 10px; color: var(--muted); }
+  .newbtn { width: 100%; background: var(--accent); color: #000; font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; border: none; border-radius: var(--r); padding: 12px; cursor: pointer; margin-top: auto; box-shadow: 0 0 12px var(--aglow); }
+
+  /* ── HOME ── */
+  .home { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 16px; text-align: center; }
+  .homelogo { font-family: 'Rajdhani', sans-serif; font-size: 52px; font-weight: 700; letter-spacing: 8px; color: var(--accent); text-transform: uppercase; line-height: 0.95; text-shadow: 0 0 40px var(--aglow); }
+  .homesub { font-size: 9px; color: var(--muted); letter-spacing: 6px; text-transform: uppercase; margin-bottom: 36px; margin-top: 6px; }
+  .startbtn {
+    background: var(--accent); color: #000;
+    font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700;
+    letter-spacing: 4px; text-transform: uppercase; border: none;
+    border-radius: var(--r); padding: 13px 40px; cursor: pointer;
+    box-shadow: 0 0 20px var(--aglow); transition: all 0.12s;
+  }
+  .startbtn:hover { box-shadow: 0 0 32px var(--aglow); opacity: 0.9; }
+  .recent { width: 100%; margin-top: 24px; text-align: left; }
+  .reclbl { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
+  .recitem { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rsm); padding: 7px 10px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+  .recname { font-size: 12px; font-weight: 700; }
+  .recmeta { font-size: 9px; color: var(--muted); margin-top: 1px; }
+  .recvol { font-size: 11px; color: var(--accent); font-weight: 700; font-family: 'Share Tech Mono', monospace; }
+
+  /* ── EMPTY ── */
+  .empty { text-align: center; padding: 24px 12px; color: var(--muted); }
+  .emico { font-size: 24px; margin-bottom: 6px; opacity: 0.3; }
+  .emtxt { font-size: 11px; letter-spacing: 1px; }
+`;
+
+// ── Rest Timer ────────────────────────────────────────────────────────────────
+function RestTimer({ onClose }) {
+  const [total, setTotal] = useState(90);
+  const [rem, setRem] = useState(90);
+  const [running, setRunning] = useState(true);
+  const ref = useRef(null);
+
+  useEffect(() => { setRem(total); setRunning(true); }, [total]);
+
+  useEffect(() => {
+    if (!running) { clearInterval(ref.current); return; }
+    ref.current = setInterval(() => setRem(r => r <= 0 ? 0 : r - 1), 1000);
+    return () => clearInterval(ref.current);
+  }, [running, total]);
+
+  const r = 76, circ = 2 * Math.PI * r;
+  const pct = rem / total;
+  const offset = circ * (1 - pct);
+  const urgent = rem <= 10 && rem > 0;
+  const overtime = rem === 0;
+
+  return (
+    <div className="rest-overlay" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div className="rest-lbl">Rest Timer</div>
+        <div className="rest-ring">
+          <svg className="rest-svg" width="170" height="170" viewBox="0 0 170 170">
+            <circle className="rest-bg" cx="85" cy="85" r={r} />
+            <circle className={`rest-arc ${urgent?"urgent":""} ${overtime?"overtime":""}`}
+              cx="85" cy="85" r={r} strokeDasharray={circ} strokeDashoffset={offset} />
+          </svg>
+          <div className={`rest-num ${urgent?"urgent":""} ${overtime?"overtime":""}`}>
+            {pad(Math.floor(rem/60))}:{pad(rem%60)}
+          </div>
+        </div>
+        {overtime && <div className="rest-done">▶ Next Set</div>}
+        <div className="rest-presets">
+          {REST_PRESETS.map(p => (
+            <button key={p} className={`rp-btn ${total===p?"active":""}`} onClick={() => setTotal(p)}>{p}s</button>
+          ))}
+        </div>
+        <div className="rest-btns">
+          <button className="rb rb-close" onClick={onClose}>Close</button>
+          <button className="rb rb-skip" onClick={() => { setRunning(false); setRem(0); }}>
+            {overtime ? "Done" : "Skip"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Exercise Card ─────────────────────────────────────────────────────────────
+function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest }) {
+  const mc = MUSCLE_COLORS[entry.muscleGroup] || { bg:"#111", border:"#333", text:"#888" };
+  const doneCt = entry.sets.filter(s => s.done).length;
+
+  const upd = (id, field, val) => onUpdate({ ...entry, sets: entry.sets.map(s => s.id===id ? {...s,[field]:val} : s) });
+  const tick = (id) => {
+    const wasDone = entry.sets.find(s => s.id===id)?.done;
+    onUpdate({ ...entry, sets: entry.sets.map(s => s.id===id ? {...s,done:!s.done} : s) });
+  };
+  const apply = () => onUpdate({ ...entry, sets: Array.from({length:entry.targetSets}, () => makeSet(entry.targetReps, entry.targetWeight)) });
+  const addSet = () => onUpdate({ ...entry, sets: [...entry.sets, makeSet(entry.targetReps, entry.targetWeight)] });
+  const rmSet = (id) => { if (entry.sets.length<=1) return; onUpdate({ ...entry, sets: entry.sets.filter(s=>s.id!==id) }); };
+
+  const swapOpts = allExercises.filter(ex => entry.similarExercises.includes(ex.id) && !addedIds.has(ex.id));
+  const doSwap = (ex) => onUpdate({ ...makeEntry(ex), entryId: entry.entryId, expanded: true });
+
+  return (
+    <div className={`excard ${entry.expanded?"open":""}`}>
+      <div className="exhdr" onClick={() => onUpdate({...entry, expanded:!entry.expanded, showSwap:false})}>
+        <div className="exname">{entry.name}</div>
+        <span className="mtag" style={{background:mc.bg, borderColor:mc.border, color:mc.text}}>{entry.muscleGroup}</span>
+        <div className="hdr-r">
+          <div className="pips">{entry.sets.slice(0,8).map(s => <div key={s.id} className={`pip ${s.done?"on":""}`} />)}</div>
+          <button className="hbtn sw" onClick={e=>{e.stopPropagation(); onUpdate({...entry,showSwap:!entry.showSwap,expanded:true});}}>⇄</button>
+          <button className="hbtn dl" onClick={e=>{e.stopPropagation(); onRemove();}}>✕</button>
+        </div>
+      </div>
+
+      {entry.expanded && <>
+        {entry.showSwap && (
+          <div className="swappanel">
+            <div className="swaplbl">Swap — same muscle</div>
+            {swapOpts.length===0
+              ? <div style={{fontSize:10,color:"var(--muted)"}}>No alternatives available</div>
+              : <div className="swaplist">{swapOpts.map(ex=>(
+                  <div key={ex.id} className="swapitem" onClick={()=>doSwap(ex)}>
+                    <span>{ex.name}</span><span className="swarr">→</span>
+                  </div>
+                ))}</div>
+            }
+          </div>
+        )}
+
+        <div className="trow">
+          <span className="tlbl">Target</span>
+          <input className="nin" type="number" min="1" max="20" value={entry.targetSets} onClick={e=>e.stopPropagation()} onChange={e=>onUpdate({...entry,targetSets:+e.target.value})} />
+          <span className="sp">×</span>
+          <input className="nin" type="number" min="1" max="100" value={entry.targetReps} onClick={e=>e.stopPropagation()} onChange={e=>onUpdate({...entry,targetReps:+e.target.value})} />
+          <span className="sp">@</span>
+          <input className="nin w" type="number" min="0" step="2.5" value={entry.targetWeight} onClick={e=>e.stopPropagation()} onChange={e=>onUpdate({...entry,targetWeight:+e.target.value})} />
+          <span className="sp">kg</span>
+          <button className="apbtn" onClick={e=>{e.stopPropagation();apply();}}>Apply</button>
+        </div>
+
+        <div className="slist">
+          {entry.sets.map((set,i) => (
+            <div key={set.id} className={`srow ${set.done?"done":""}`}>
+              <span className="snum">S{i+1}</span>
+              <div className="sinputs">
+                <input className="sin" type="number" min="0" max="999" value={set.reps} onChange={e=>upd(set.id,"reps",+e.target.value)} />
+                <span className="ssep">×</span>
+                <input className="sin w" type="number" min="0" step="2.5" value={set.weight} onChange={e=>upd(set.id,"weight",+e.target.value)} />
+                <span className="sunit">kg</span>
+              </div>
+              {set.done && <button className="restbtn" onClick={()=>onStartRest()}>⏱ Rest</button>}
+              <button className="rmbtn" onClick={()=>rmSet(set.id)}>−</button>
+              <button className={`tickbtn ${set.done?"on":""}`} onClick={()=>tick(set.id)}>✓</button>
+            </div>
+          ))}
+          <button className="addbtn" onClick={addSet}>+ Add Set</button>
+        </div>
+      </>}
+    </div>
+  );
+}
+
+// ── Browser ───────────────────────────────────────────────────────────────────
+function Browser({ allExercises, addedIds, onAdd, onClose, onOpenCustom }) {
+  const [search, setSearch] = useState("");
+  const [cat, setCat] = useState("all");
+  const [muscle, setMuscle] = useState("all");
+
+  const cats    = ["all","push","pull","legs","upper","lower","full body"];
+  const muscles = ["all","chest","back","shoulders","arms","legs","core"];
+
+  const filtered = allExercises.filter(ex => {
+    return ex.name.toLowerCase().includes(search.toLowerCase())
+      && (cat==="all" || ex.category===cat)
+      && (muscle==="all" || ex.muscleGroup===muscle);
+  });
+  const grouped = filtered.reduce((a,ex) => { (a[ex.muscleGroup]=a[ex.muscleGroup]||[]).push(ex); return a; }, {});
+
+  return (
+    <div className="moverlay" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="mhandle" />
+        <div className="mhdr">
+          <span className="mtitle">Add Exercise</span>
+          <button className="mclosebtn" onClick={onClose}>✕</button>
+        </div>
+        <div className="msearch">
+          <span className="searchic">🔍</span>
+          <input className="searchin" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} autoFocus />
+        </div>
+        <div className="frow">
+          {cats.map(c=><button key={c} className={`fchip ${cat===c?"on":""}`} onClick={()=>setCat(c)}>{c==="all"?"ALL":c.toUpperCase()}</button>)}
+        </div>
+        <div className="frow" style={{paddingTop:0}}>
+          {muscles.map(m=><button key={m} className={`fchip ${muscle===m?"on":""}`}
+            style={muscle===m&&m!=="all"?{background:MUSCLE_COLORS[m]?.bg,borderColor:MUSCLE_COLORS[m]?.border,color:MUSCLE_COLORS[m]?.text}:{}}
+            onClick={()=>setMuscle(m)}>{m==="all"?"ALL":m.toUpperCase()}</button>)}
+        </div>
+        <div className="blist">
+          {Object.keys(grouped).length===0 && <div className="empty"><div className="emico">🔍</div><div className="emtxt">No results</div></div>}
+          {Object.entries(grouped).map(([grp,exs]) => {
+            const mc = MUSCLE_COLORS[grp]||{};
+            return (
+              <div key={grp}>
+                <div className="grplbl" style={{color:mc.text||"var(--muted)"}}>{grp.toUpperCase()}</div>
+                {exs.map(ex => {
+                  const isAdded = addedIds.has(ex.id);
+                  return (
+                    <div key={ex.id} className={`bitem ${isAdded?"added":""}`} onClick={()=>!isAdded&&onAdd(ex)}>
+                      <div className="binfo">
+                        <div className="bname">{ex.name}</div>
+                        <div className="bmeta">
+                          <span className="mtag" style={{background:mc.bg,borderColor:mc.border,color:mc.text,fontSize:7}}>{grp}</span>
+                          <span className="bequip">{ex.equipment}</span>
+                        </div>
+                      </div>
+                      <div className="bstatus">{isAdded?"✓":"+"}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+          <div style={{marginTop:8}}>
+            <button className="addexbtn" onClick={onOpenCustom}>+ Create Custom</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Custom Exercise ───────────────────────────────────────────────────────────
+function CustomModal({ onSave, onClose }) {
+  const [name, setName]           = useState("");
+  const [category, setCategory]   = useState("push");
+  const [muscleGroup, setMG]      = useState("chest");
+  const [equipment, setEquip]     = useState("barbell");
+
+  const cats    = ["push","pull","legs","upper","lower","full body"];
+  const muscles = ["chest","back","shoulders","arms","legs","core"];
+  const equips  = ["barbell","dumbbell","cable","machine","bodyweight"];
+
+  const save = () => {
+    if (!name.trim()) return;
+    const ex = { id:"c_"+uid(), name:name.trim(), category, muscleGroup, equipment, similarExercises:[], custom:true };
+    storage.saveCustomExercise(ex);
+    onSave(ex);
+  };
+
+  return (
+    <div className="moverlay" onClick={onClose}>
+      <div className="cmodal" onClick={e=>e.stopPropagation()}>
+        <div className="mhandle" style={{margin:"0 auto 10px"}} />
+        <div className="ctitle">New Exercise</div>
+        <div className="flbl">Name</div>
+        <input className="fin" placeholder="e.g. Close Grip Bench" value={name} onChange={e=>setName(e.target.value)} autoFocus />
+        <div className="flbl">Category</div>
+        <div className="chipgrp">{cats.map(c=><button key={c} className={`selchip ${category===c?"on":""}`} onClick={()=>setCategory(c)}>{c}</button>)}</div>
+        <div className="flbl">Muscle Group</div>
+        <div className="chipgrp">{muscles.map(m=><button key={m} className={`selchip ${muscleGroup===m?"on":""}`}
+          style={muscleGroup===m?{background:MUSCLE_COLORS[m]?.bg,borderColor:MUSCLE_COLORS[m]?.border,color:MUSCLE_COLORS[m]?.text}:{}}
+          onClick={()=>setMG(m)}>{m}</button>)}</div>
+        <div className="flbl">Equipment</div>
+        <div className="chipgrp">{equips.map(e=><button key={e} className={`selchip ${equipment===e?"on":""}`} onClick={()=>setEquip(e)}>{e}</button>)}</div>
+        <button className="creatbtn" onClick={save}>Create Exercise</button>
+        <button className="cancbtn" onClick={onClose}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Summary ───────────────────────────────────────────────────────────────────
+function Summary({ session, onNew }) {
+  const totalSets = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
+  const totalVol  = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+s.reps*s.weight,0),0);
+  const dur = session.endTime - session.startTime;
+  const prev = storage.getSessions().filter(s=>s.id!==session.id);
+  const prs = [];
+  session.exercises.forEach(entry => {
+    const maxNow = Math.max(...entry.sets.filter(s=>s.done).map(s=>s.weight),0);
+    if (!maxNow) return;
+    const prevMax = prev.reduce((best,sess) => {
+      const m = sess.exercises?.find(e=>e.exerciseId===entry.exerciseId);
+      if (!m) return best;
+      return Math.max(best,...(m.sets||[]).filter(s=>s.done).map(s=>s.weight),0);
+    },0);
+    if (maxNow>prevMax) prs.push({name:entry.name,weight:maxNow});
+  });
+
+  return (
+    <div className="summary">
+      <div className="sumhdr">
+        <div className="sumicon">🏆</div>
+        <div className="sumtitle">Complete</div>
+        <div className="sumdate">{session.name} · {fmtDate(new Date(session.startTime))}</div>
+      </div>
+      <div className="statgrid">
+        <div className="statcard"><div className="statval">{fmtMs(dur)}</div><div className="statlbl">Duration</div></div>
+        <div className="statcard"><div className="statval">{totalSets}</div><div className="statlbl">Sets Done</div></div>
+        <div className="statcard"><div className="statval">{session.exercises.length}</div><div className="statlbl">Exercises</div></div>
+        <div className="statcard"><div className="statval">{totalVol>0?`${(totalVol/1000).toFixed(1)}t`:"—"}</div><div className="statlbl">Volume</div></div>
+      </div>
+      {prs.length>0 && (
+        <div className="prsec">
+          <div className="seclbl" style={{marginBottom:5}}>🎉 New PRs</div>
+          {prs.map((pr,i)=>(
+            <div key={i} className="pritem">
+              <span>🥇</span><span className="prname">{pr.name}</span>
+              <span className="prw">{pr.weight}kg</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="sumexes">
+        {session.exercises.map(e=>{
+          const done=e.sets.filter(s=>s.done);
+          const top=done.length?Math.max(...done.map(s=>s.weight)):0;
+          return (
+            <div key={e.entryId} className="seitem">
+              <div className="sename">{e.name}</div>
+              <div className="semeta">{done.length} sets{top>0?` · ${top}kg`:""}</div>
+            </div>
+          );
+        })}
+      </div>
+      <button className="newbtn" onClick={onNew}>New Workout</button>
+    </div>
+  );
+}
+
+// ── Home ──────────────────────────────────────────────────────────────────────
+function Home({ onStart }) {
+  const recent = storage.getSessions().slice(-3).reverse();
+  return (
+    <div className="home">
+      <div className="homelogo">Lift<br/>Log</div>
+      <div className="homesub">Track your gains</div>
+      <button className="startbtn" onClick={onStart}>Start Workout</button>
+      {recent.length>0 && (
+        <div className="recent">
+          <div className="reclbl">Recent</div>
+          {recent.map(s=>{
+            const vol=s.exercises?.reduce((a,e)=>a+(e.sets||[]).filter(x=>x.done).reduce((b,x)=>b+x.reps*x.weight,0),0)||0;
+            return (
+              <div key={s.id} className="recitem">
+                <div>
+                  <div className="recname">{s.name}</div>
+                  <div className="recmeta">{fmtDate(new Date(s.startTime))} · {s.exercises?.length||0} exercises</div>
+                </div>
+                {vol>0&&<div className="recvol">{(vol/1000).toFixed(1)}t</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+export default function LiftLog() {
+  const [screen, setScreen]             = useState("home");
+  const [session, setSession]           = useState(null);
+  const [exercises, setExercises]       = useState([]);
+  const [showBrowser, setShowBrowser]   = useState(false);
+  const [showCustom, setShowCustom]     = useState(false);
+  const [showRest, setShowRest]         = useState(false);
+  const [allExercises, setAllExercises] = useState([]);
+  const [elapsed, setElapsed]           = useState(0);
+  const timerRef = useRef(null);
+
+  useEffect(() => { setAllExercises(storage.getExercises()); }, []);
+
+  useEffect(() => {
+    if (screen==="session" && session) {
+      timerRef.current = setInterval(() => setElapsed(Date.now()-session.startTime), 1000);
+    } else clearInterval(timerRef.current);
+    return () => clearInterval(timerRef.current);
+  }, [screen, session]);
+
+  const startSession = () => {
+    const now = Date.now();
+    const s = { id:uid(), name:"Workout · "+fmtDate(), startTime:now, exercises:[] };
+    setSession(s); setExercises([]); setElapsed(0); setScreen("session");
+  };
+
+  const addExercise    = (ex) => setExercises(p=>[...p, makeEntry(ex)]);
+  const updateExercise = (u)  => setExercises(p=>p.map(e=>e.entryId===u.entryId?u:e));
+  const removeExercise = (id) => setExercises(p=>p.filter(e=>e.entryId!==id));
+
+  const finish = () => {
+    const done = { ...session, exercises, endTime:Date.now() };
+    storage.saveSession(done); setSession(done); setScreen("summary");
+  };
+  const discard = () => { setExercises([]); setSession(null); setScreen("home"); };
+
+  const addedIds = new Set(exercises.map(e=>e.exerciseId));
+  const doneSets = exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+
+        {screen==="session" && (
+          <div className="topbar">
+            <div className="logo">Lift Log</div>
+            <div className="topbar-r">
+              <div className="live-dot" />
+              <div className="clock">{fmtMs(elapsed)}</div>
+              <input className="sname-input" value={session?.name||""} placeholder="Session name..."
+                onChange={e=>setSession(s=>({...s,name:e.target.value}))} />
+            </div>
+          </div>
+        )}
+
+        {screen==="home"    && <Home onStart={startSession} />}
+        {screen==="summary" && session && <Summary session={session} onNew={()=>{setScreen("home");setSession(null);}} />}
+
+        {screen==="session" && session && <>
+          <div className="exsec">
+            <div className="secbar">
+              <span className="seclbl">Exercises · {exercises.length}</span>
+              <span className="secstat">{doneSets} sets done</span>
+            </div>
+            {exercises.length===0 && (
+              <div className="empty"><div className="emico">💪</div><div className="emtxt">Add exercises to begin</div></div>
+            )}
+            {exercises.map(entry=>(
+              <ExCard key={entry.entryId} entry={entry} allExercises={allExercises}
+                onUpdate={updateExercise} onRemove={()=>removeExercise(entry.entryId)}
+                addedIds={addedIds} onStartRest={()=>setShowRest(true)} />
+            ))}
+          </div>
+          <div className="addwrap">
+            <button className="addexbtn" onClick={()=>setShowBrowser(true)}>+ Add Exercise</button>
+          </div>
+          <div className="botbar">
+            <button className="discbtn" onClick={discard}>Discard</button>
+            <button className="finbtn" onClick={finish} disabled={exercises.length===0}>Finish Workout</button>
+          </div>
+        </>}
+
+        {showBrowser && (
+          <Browser allExercises={allExercises} addedIds={addedIds}
+            onAdd={ex=>{addExercise(ex);}}
+            onClose={()=>setShowBrowser(false)}
+            onOpenCustom={()=>{setShowBrowser(false);setShowCustom(true);}}
+          />
+        )}
+        {showCustom && (
+          <div className="moverlay">
+            <CustomModal
+              onSave={ex=>{setAllExercises(storage.getExercises());addExercise(ex);setShowCustom(false);}}
+              onClose={()=>{setShowCustom(false);setShowBrowser(true);}}
+            />
+          </div>
+        )}
+        {showRest && <RestTimer onClose={()=>setShowRest(false)} />}
+      </div>
+    </>
+  );
+}
