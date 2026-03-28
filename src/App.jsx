@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { storage } from './services/storage';
 import { useTimer } from './hooks/useTimer';
 import { useWorkouts } from './hooks/useWorkouts';
@@ -25,6 +25,21 @@ export default function App() {
   const [showRest, setShowRest]         = useState(false);
   const [restEndTime, setRestEndTime]   = useState(null);
   const [restTotal, setRestTotal]       = useState(120);
+  const [restRem, setRestRem]           = useState(null);
+  const restTickRef                     = useRef(null);
+
+  useEffect(() => {
+    clearInterval(restTickRef.current);
+    if (!restEndTime) { setRestRem(null); return; }
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((restEndTime - Date.now()) / 1000));
+      setRestRem(rem);
+      if (rem === 0) { clearInterval(restTickRef.current); setShowRest(true); }
+    };
+    tick();
+    restTickRef.current = setInterval(tick, 500);
+    return () => clearInterval(restTickRef.current);
+  }, [restEndTime]);
 
   const [allExercises, setAllExercises] = useState([]);
 
@@ -94,7 +109,7 @@ export default function App() {
           {exercises.map(entry=>(
             <ExerciseCard key={entry.entryId} entry={entry} allExercises={allExercises}
               onUpdate={updateExercise} onRemove={()=>removeExercise(entry.entryId)}
-              addedIds={addedIds} onStartRest={handleRestButton} />
+              addedIds={addedIds} onStartRest={handleRestButton} restRem={restRem} />
           ))}
         </div>
         <div className="addwrap">
