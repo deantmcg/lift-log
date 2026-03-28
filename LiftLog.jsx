@@ -224,8 +224,8 @@ const css = `
   /* ── TOPBAR ── */
   .topbar {
     position: sticky; top: 0; z-index: 50;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 6px 12px; background: var(--surface);
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+    gap: 8px; padding: 8px 12px; background: var(--surface);
     border-bottom: 1px solid var(--border2);
   }
   .logo { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
@@ -235,11 +235,11 @@ const css = `
   .clock { font-family: 'Share Tech Mono', monospace; font-size: 15px; color: var(--accent); }
   .sname-input {
     background: transparent; border: none; outline: none;
-    font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
-    color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
-    width: 130px; text-align: right; cursor: text;
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--dim); letter-spacing: 2px; text-transform: uppercase;
+    width: 100%; text-align: center; cursor: text;
   }
-  .sname-input:focus { color: var(--dim); }
+  .sname-input:focus { color: var(--text); }
   .sname-input::placeholder { color: var(--muted); }
 
   /* ── REST OVERLAY ── */
@@ -247,7 +247,7 @@ const css = `
     position: fixed; inset: 0; z-index: 200; background: rgba(0,3,0,0.94);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  .rest-lbl { font-size: 10px; letter-spacing: 5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
+  .rest-lbl { font-size: 12px; letter-spacing: 5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
   .rest-ring { position: relative; width: 170px; height: 170px; margin-bottom: 18px; }
   .rest-svg { transform: rotate(-90deg); }
   .rest-bg  { fill: none; stroke: var(--border2); stroke-width: 5; }
@@ -281,79 +281,81 @@ const css = `
   /* ── EXERCISES SECTION ── */
   .exsec { padding: 6px 10px 0; flex: 1; }
   .secbar { display: flex; align-items: center; justify-content: space-between; padding: 2px 2px 5px; }
-  .seclbl { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
-  .secstat { font-size: 9px; color: var(--accent); letter-spacing: 2px; font-weight: 700; }
+  .seclbl { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .secstat { font-size: 11px; color: var(--accent); letter-spacing: 2px; font-weight: 700; }
 
   /* ── EXERCISE CARD ── */
-  .excard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 5px; overflow: hidden; transition: border-color 0.15s; }
+  .excard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 6px; overflow: hidden; transition: border-color 0.15s; }
   .excard.open { border-color: var(--border2); }
 
-  .exhdr { display: flex; align-items: center; gap: 7px; padding: 6px 10px; cursor: pointer; min-height: 34px; }
-  .exname { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.3px; }
-  .mtag { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 1px 5px; border-radius: 2px; border: 1px solid; flex-shrink: 0; }
-  .hdr-r { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-  .pips { display: flex; gap: 2px; align-items: center; }
-  .pip { width: 4px; height: 4px; border-radius: 50%; background: var(--border2); transition: background 0.15s; }
+  .exhdr { display: flex; align-items: center; gap: 7px; padding: 8px 10px; cursor: pointer; min-height: 40px; }
+  .exname { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.3px; }
+  .mtag { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; border: 1px solid; flex-shrink: 0; }
+  .hdr-r { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .pips { display: flex; gap: 3px; align-items: center; }
+  .pip { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); transition: background 0.15s; }
   .pip.on { background: var(--accent); box-shadow: 0 0 3px var(--aglow); }
-  .hbtn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 12px; padding: 2px 3px; border-radius: 2px; line-height: 1; transition: color 0.12s; }
+  .hbtn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px; padding: 3px 4px; border-radius: 2px; line-height: 1; transition: color 0.12s; }
   .hbtn:hover { color: var(--dim); }
   .hbtn.sw:hover { color: var(--accent); }
   .hbtn.dl:hover { color: var(--danger); }
 
   /* ── TARGET ROW ── */
-  .trow { display: flex; align-items: center; gap: 5px; padding: 4px 10px 5px; border-top: 1px solid var(--border); }
-  .tlbl { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; font-weight: 700; }
+  .trow { display: flex; align-items: center; gap: 5px; padding: 6px 10px; border-top: 1px solid var(--border); }
+  .tlbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; font-weight: 700; }
   .nin {
-    width: 36px; background: var(--surf2); border: 1px solid var(--border2);
+    width: 42px; background: var(--surf2); border: 1px solid var(--border2);
     border-radius: var(--rsm); color: var(--text); font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; padding: 3px 3px; text-align: center; outline: none; transition: border-color 0.12s;
+    font-size: 16px; padding: 4px 3px; text-align: center; outline: none; transition: border-color 0.12s;
+    -webkit-appearance: none;
   }
   .nin:focus { border-color: var(--accent); }
   .nin::-webkit-inner-spin-button { -webkit-appearance: none; }
-  .nin.w { width: 44px; }
-  .sp { font-size: 9px; color: var(--muted); }
+  .nin.w { width: 54px; }
+  .sp { font-size: 11px; color: var(--muted); }
   .apbtn {
     margin-left: auto; background: var(--adim); border: 1px solid rgba(61,255,110,0.3);
-    color: var(--accent); font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700;
-    padding: 2px 9px; border-radius: var(--rsm); cursor: pointer; letter-spacing: 1px;
+    color: var(--accent); font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    padding: 4px 10px; border-radius: var(--rsm); cursor: pointer; letter-spacing: 1px;
     text-transform: uppercase; transition: background 0.12s; white-space: nowrap;
   }
   .apbtn:hover { background: rgba(61,255,110,0.2); }
 
   /* ── SET ROWS ── */
-  .slist { padding: 2px 10px 7px; display: flex; flex-direction: column; gap: 3px; }
+  .slist { padding: 2px 10px 8px; display: flex; flex-direction: column; gap: 4px; }
   .srow {
-    display: flex; align-items: center; gap: 5px;
+    display: flex; align-items: center; gap: 6px;
     background: var(--surf2); border-radius: var(--rsm);
-    padding: 4px 7px; border: 1px solid transparent; transition: border-color 0.12s;
+    padding: 6px 8px; border: 1px solid transparent; transition: border-color 0.12s;
   }
   .srow.done { border-color: rgba(61,255,110,0.2); background: #0a150a; }
-  .snum { font-size: 8px; font-weight: 700; color: var(--muted); width: 16px; letter-spacing: 1px; flex-shrink: 0; }
-  .sinputs { display: flex; align-items: center; gap: 3px; flex: 1; }
+  .snum { font-size: 10px; font-weight: 700; color: var(--muted); width: 18px; letter-spacing: 1px; flex-shrink: 0; }
+  .sinputs { display: flex; align-items: center; gap: 4px; flex: 1; }
   .sin {
-    width: 36px; background: var(--surf3); border: 1px solid var(--border2);
+    width: 42px; background: var(--surf3); border: 1px solid var(--border2);
     border-radius: 2px; color: var(--text); font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; padding: 2px 3px; text-align: center; outline: none;
+    font-size: 16px; padding: 3px 3px; text-align: center; outline: none;
+    -webkit-appearance: none;
   }
   .sin:focus { border-color: var(--accent); }
   .sin::-webkit-inner-spin-button { -webkit-appearance: none; }
-  .sin.w { width: 42px; }
-  .ssep { font-size: 9px; color: var(--muted); }
-  .sunit { font-size: 8px; color: var(--muted); }
+  .sin.w { width: 52px; }
+  .ssep { font-size: 11px; color: var(--muted); }
+  .sunit { font-size: 10px; color: var(--muted); }
   .restbtn {
     background: var(--surf3); border: 1px solid var(--border2);
-    color: var(--muted); font-size: 10px; padding: 2px 6px;
+    color: var(--muted); font-size: 12px; padding: 4px 8px;
     border-radius: var(--rsm); cursor: pointer;
     font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 0.5px;
     transition: all 0.12s; white-space: nowrap;
   }
   .restbtn:hover { border-color: var(--accent); color: var(--accent); }
-  .rmbtn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 11px; padding: 1px 2px; line-height: 1; transition: color 0.12s; }
+  .rmbtn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 3px; line-height: 1; transition: color 0.12s; }
   .rmbtn:hover { color: var(--danger); }
   .tickbtn {
-    width: 24px; height: 24px; border-radius: 50%;
+    width: 28px; height: 28px; border-radius: 50%;
     border: 2px solid var(--border2); background: none;
-    cursor: pointer; color: var(--muted); font-size: 11px;
+    cursor: pointer; color: var(--muted); font-size: 13px;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.12s; flex-shrink: 0;
   }
@@ -361,32 +363,32 @@ const css = `
   .addbtn {
     width: 100%; background: none; border: 1px dashed var(--border2);
     border-radius: var(--rsm); color: var(--muted);
-    font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700;
-    padding: 4px; cursor: pointer; letter-spacing: 1.5px; text-transform: uppercase;
-    transition: all 0.12s; margin-top: 1px;
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    padding: 6px; cursor: pointer; letter-spacing: 1.5px; text-transform: uppercase;
+    transition: all 0.12s; margin-top: 2px;
   }
   .addbtn:hover { border-color: var(--accent); color: var(--accent); }
 
   /* ── SWAP PANEL ── */
-  .swappanel { padding: 3px 10px 7px; border-top: 1px solid var(--border); }
-  .swaplbl { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 700; }
+  .swappanel { padding: 3px 10px 8px; border-top: 1px solid var(--border); }
+  .swaplbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; font-weight: 700; }
   .swaplist { display: flex; flex-direction: column; gap: 3px; }
   .swapitem {
     display: flex; align-items: center; justify-content: space-between;
-    background: var(--surf2); border-radius: var(--rsm); padding: 6px 9px;
+    background: var(--surf2); border-radius: var(--rsm); padding: 8px 10px;
     cursor: pointer; border: 1px solid var(--border); transition: all 0.12s;
-    font-size: 12px; font-weight: 600;
+    font-size: 14px; font-weight: 600;
   }
   .swapitem:hover { border-color: rgba(61,255,110,0.5); color: var(--accent); }
-  .swarr { font-size: 11px; color: var(--accent); }
+  .swarr { font-size: 13px; color: var(--accent); }
 
   /* ── ADD EXERCISE ── */
   .addwrap { padding: 5px 10px 3px; }
   .addexbtn {
     width: 100%; background: var(--surface); border: 1px dashed var(--border2);
     border-radius: var(--r); color: var(--muted);
-    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
-    padding: 9px; cursor: pointer; letter-spacing: 2px; text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+    padding: 11px; cursor: pointer; letter-spacing: 2px; text-transform: uppercase;
     transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px;
   }
   .addexbtn:hover { border-color: var(--accent); color: var(--accent); background: var(--adim); }
@@ -438,13 +440,13 @@ const css = `
   .frow::-webkit-scrollbar { display: none; }
   .fchip {
     flex-shrink: 0; background: var(--surf2); border: 1px solid var(--border);
-    border-radius: 2px; color: var(--muted); font-size: 9px; font-weight: 700;
-    letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; cursor: pointer;
+    border-radius: 2px; color: var(--muted); font-size: 11px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 10px; cursor: pointer;
     transition: all 0.1s; font-family: 'Rajdhani', sans-serif;
   }
   .fchip.on { background: var(--adim); border-color: var(--accent); color: var(--accent); }
   .blist { flex: 1; overflow-y: auto; padding: 0 12px 14px; }
-  .grplbl { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); padding: 6px 0 3px; font-weight: 700; }
+  .grplbl { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); padding: 7px 0 4px; font-weight: 700; }
   .bitem {
     display: flex; align-items: center; gap: 8px; padding: 7px 9px;
     background: var(--surf2); border-radius: var(--rsm); margin-bottom: 3px;
@@ -453,10 +455,10 @@ const css = `
   .bitem:hover { border-color: rgba(61,255,110,0.4); }
   .bitem.added { border-color: var(--accent); opacity: 0.55; cursor: default; }
   .binfo { flex: 1; min-width: 0; }
-  .bname { font-size: 12px; font-weight: 700; }
+  .bname { font-size: 14px; font-weight: 700; }
   .bmeta { display: flex; gap: 6px; margin-top: 2px; align-items: center; }
-  .bequip { font-size: 9px; color: var(--muted); }
-  .bstatus { font-size: 12px; color: var(--accent); font-weight: 700; }
+  .bequip { font-size: 11px; color: var(--muted); }
+  .bstatus { font-size: 14px; color: var(--accent); font-weight: 700; }
 
   /* ── CUSTOM EXERCISE ── */
   .cmodal {
@@ -466,7 +468,7 @@ const css = `
   }
   @media (min-width: 768px) { .cmodal { max-width: 620px; } }
   .ctitle { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
-  .flbl { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; font-weight: 700; }
+  .flbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 700; }
   .fin {
     width: 100%; background: var(--surf2); border: 1px solid var(--border2);
     border-radius: var(--r); color: var(--text);
@@ -498,16 +500,16 @@ const css = `
   .sumdate { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-top: 1px; text-transform: uppercase; }
   .statgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 12px; }
   .statcard { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); padding: 10px; text-align: center; }
-  .statval { font-family: 'Share Tech Mono', monospace; font-size: 22px; color: var(--accent); }
-  .statlbl { font-size: 8px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; font-weight: 700; }
+  .statval { font-family: 'Share Tech Mono', monospace; font-size: 24px; color: var(--accent); }
+  .statlbl { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; font-weight: 700; }
   .prsec { margin-bottom: 10px; }
   .pritem { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid rgba(61,255,110,0.25); border-radius: var(--rsm); padding: 6px 9px; margin-bottom: 3px; }
   .prname { font-size: 12px; font-weight: 700; flex: 1; }
   .prw { font-size: 12px; color: var(--accent); font-weight: 700; font-family: 'Share Tech Mono', monospace; }
   .sumexes { margin-bottom: 12px; }
   .seitem { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rsm); padding: 7px 9px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
-  .sename { font-size: 12px; font-weight: 700; }
-  .semeta { font-size: 10px; color: var(--muted); }
+  .sename { font-size: 14px; font-weight: 700; }
+  .semeta { font-size: 11px; color: var(--muted); }
   .newbtn { width: 100%; background: var(--accent); color: #000; font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; border: none; border-radius: var(--r); padding: 12px; cursor: pointer; margin-top: auto; box-shadow: 0 0 12px var(--aglow); }
 
   /* ── HOME ── */
@@ -523,11 +525,11 @@ const css = `
   }
   .startbtn:hover { box-shadow: 0 0 32px var(--aglow); opacity: 0.9; }
   .recent { width: 100%; margin-top: 24px; text-align: left; }
-  .reclbl { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
-  .recitem { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rsm); padding: 7px 10px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
-  .recname { font-size: 12px; font-weight: 700; }
-  .recmeta { font-size: 9px; color: var(--muted); margin-top: 1px; }
-  .recvol { font-size: 11px; color: var(--accent); font-weight: 700; font-family: 'Share Tech Mono', monospace; }
+  .reclbl { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
+  .recitem { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rsm); padding: 8px 10px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+  .recname { font-size: 14px; font-weight: 700; }
+  .recmeta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .recvol { font-size: 12px; color: var(--accent); font-weight: 700; font-family: 'Share Tech Mono', monospace; }
 
   /* ── EMPTY ── */
   .empty { text-align: center; padding: 24px 12px; color: var(--muted); }
@@ -566,7 +568,7 @@ const css = `
     letter-spacing: 1px; padding: 4px 0; transition: color 0.12s; flex-shrink: 0;
   }
   .backbtn:hover { color: var(--accent); }
-  .xtitle { font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); }
+  .xtitle { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .xscroll { flex: 1; overflow-y: auto; padding: 8px 12px 20px; }
   .xitem {
     display: flex; align-items: center; gap: 8px; padding: 9px 9px;
@@ -590,10 +592,24 @@ const css = `
   .histitem {
     display: flex; align-items: center; gap: 8px;
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--rsm);
-    padding: 9px 10px; margin-bottom: 4px; cursor: pointer; transition: all 0.1s;
+    padding: 10px; margin-bottom: 4px; cursor: pointer; transition: all 0.1s;
   }
   .histitem:hover { border-color: var(--border2); }
-  .histdate { font-size: 9px; color: var(--muted); margin-top: 2px; }
+  .histdate { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .hist-edit-btn {
+    background: var(--surf2); border: 1px solid var(--border2); color: var(--dim);
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; padding: 5px 12px; border-radius: var(--rsm); cursor: pointer;
+    text-transform: uppercase; transition: all 0.12s; flex-shrink: 0;
+  }
+  .hist-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .hist-save-btn {
+    background: var(--accent); color: #000;
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; padding: 5px 12px; border-radius: var(--rsm);
+    cursor: pointer; border: none; text-transform: uppercase; transition: all 0.12s; flex-shrink: 0;
+  }
+  .hist-save-btn:hover { opacity: 0.88; }
 
   /* ── TOPBAR HOME BUTTON ── */
   .homebtn-topbar {
@@ -658,6 +674,47 @@ const css = `
   .new-tmpl-btn:hover { opacity: 0.88; }
   .new-tmpl-btn:disabled { opacity: 0.25; cursor: not-allowed; box-shadow: none; }
 `;
+
+// ── NumInput ────────────────────────────────────────────────────────────────
+// Controlled numeric input that avoids the "08" glitch and prevents iOS zoom.
+function NumInput({ className, value, step, onChange, onClick }) {
+  const [str, setStr] = useState(String(value ?? 0));
+  const extRef = useRef(value);
+
+  useEffect(() => {
+    if (value !== extRef.current) {
+      extRef.current = value;
+      setStr(String(value ?? 0));
+    }
+  }, [value]);
+
+  const commit = (raw) => {
+    const n = parseFloat(raw);
+    const safe = isNaN(n) ? 0 : n;
+    extRef.current = safe;
+    setStr(String(safe));
+    onChange(safe);
+  };
+
+  return (
+    <input
+      className={className}
+      type="text"
+      inputMode={step && step !== 1 ? "decimal" : "numeric"}
+      value={str}
+      onClick={onClick}
+      onFocus={e => e.target.select()}
+      onKeyDown={e => { if (e.key === "Enter") e.target.blur(); }}
+      onChange={e => {
+        const raw = e.target.value.replace(/[^0-9.]/g, "");
+        setStr(raw);
+        const n = parseFloat(raw);
+        if (!isNaN(n)) { extRef.current = n; onChange(n); }
+      }}
+      onBlur={e => commit(e.target.value)}
+    />
+  );
+}
 
 // ── Rest Timer ────────────────────────────────────────────────────────────────
 const fmtPreset = (s) => s === 120 ? "2 min" : s === 180 ? "3 min" : `${s}s`;
@@ -756,13 +813,13 @@ function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest
 
         <div className="trow">
           <span className="tlbl">Target</span>
-          <input className="nin" type="number" min="1" max="20" value={entry.targetSets} onClick={e=>e.stopPropagation()} onChange={e=>onUpdate({...entry,targetSets:+e.target.value})} />
+          <NumInput className="nin" value={entry.targetSets} onChange={v=>onUpdate({...entry,targetSets:v})} onClick={e=>e.stopPropagation()} />
           <span className="sp">×</span>
-          <input className="nin" type="number" min="1" max="100" value={entry.targetReps} onClick={e=>e.stopPropagation()} onChange={e=>onUpdate({...entry,targetReps:+e.target.value})} />
+          <NumInput className="nin" value={entry.targetReps} onChange={v=>onUpdate({...entry,targetReps:v})} onClick={e=>e.stopPropagation()} />
           <span className="sp">@</span>
-          <input className="nin w" type="number" min="0" step="2.5" value={entry.targetWeight} onClick={e=>e.stopPropagation()} onChange={e=>onUpdate({...entry,targetWeight:+e.target.value})} />
+          <NumInput className="nin w" value={entry.targetWeight} step={2.5} onChange={v=>onUpdate({...entry,targetWeight:v})} onClick={e=>e.stopPropagation()} />
           <span className="sp">kg</span>
-          <button className="apbtn" onClick={e=>{e.stopPropagation();apply();}}>Apply</button>
+          <button className="apbtn" onClick={e=>{e.stopPropagation();apply();}}>Apply to all</button>
         </div>
 
         <div className="slist">
@@ -770,9 +827,9 @@ function ExCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest
             <div key={set.id} className={`srow ${set.done?"done":""}`}>
               <span className="snum">S{i+1}</span>
               <div className="sinputs">
-                <input className="sin" type="number" min="0" max="999" value={set.reps} onChange={e=>upd(set.id,"reps",+e.target.value)} />
+                <NumInput className="sin" value={set.reps} onChange={v=>upd(set.id,"reps",v)} />
                 <span className="ssep">×</span>
-                <input className="sin w" type="number" min="0" step="2.5" value={set.weight} onChange={e=>upd(set.id,"weight",+e.target.value)} />
+                <NumInput className="sin w" value={set.weight} step={2.5} onChange={v=>upd(set.id,"weight",v)} />
                 <span className="sunit">kg</span>
               </div>
               {set.done && (
@@ -1090,11 +1147,19 @@ function HistoryDetail({ session, onBack }) {
   const totalSets = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
   const totalVol  = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+s.reps*s.weight,0),0);
   const dur       = session.endTime ? session.endTime - session.startTime : 0;
-  return (
+  const [editing, setEditing] = useState(false);
+  return editing ? (
+    <SessionEditScreen
+      origSession={session}
+      onSave={(updated) => { setEditing(false); onBack(updated); }}
+      onCancel={() => setEditing(false)}
+    />
+  ) : (
     <div className="xscreen">
       <div className="xhdr">
         <button className="backbtn" onClick={onBack}>← Back</button>
         <span className="xtitle" style={{fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session.name}</span>
+        <button className="hist-edit-btn" onClick={()=>setEditing(true)} style={{marginLeft:'auto'}}>Edit</button>
       </div>
       <div className="xscroll">
         <div className="statgrid" style={{marginBottom:12}}>
@@ -1122,6 +1187,65 @@ function HistoryDetail({ session, onBack }) {
       </div>
     </div>
   );
+// ── Session Edit Screen for Past Sessions ───────────────────────────────────
+function SessionEditScreen({ origSession, onSave, onCancel }) {
+  const [session, setSession] = useState(() => ({ ...origSession }));
+  const [exercises, setExercises] = useState(() => origSession.exercises.map(e => ({ ...e, sets: e.sets.map(s => ({...s})) })));
+  const [allExercises, setAllExercises] = useState(() => storage.getExercises());
+  const addedIds = new Set(exercises.map(e=>e.exerciseId));
+  const updateExercise = (u) => setExercises(p=>p.map(e=>e.entryId===u.entryId?u:e));
+  const removeExercise = (id) => setExercises(p=>p.filter(e=>e.entryId!==id));
+  const addExercise = (ex) => setExercises(p=>[...p, makeEntry(ex)]);
+  const [showBrowser, setShowBrowser] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
+  const doneSets = exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
+  return (
+    <div className="xscreen">
+      <div className="xhdr">
+        <button className="backbtn" onClick={onCancel}>Cancel</button>
+        <input className="sname-input" value={session.name} placeholder="Session name..."
+          onChange={e=>setSession(s=>({...s,name:e.target.value}))} style={{flex:1,marginLeft:8}} />
+        <button className="hist-save-btn" onClick={()=>{
+          const updated = { ...session, exercises };
+          storage.saveSession(updated);
+          onSave(updated);
+        }}>Save</button>
+      </div>
+      <div className="xscroll">
+        <div className="secbar">
+          <span className="seclbl">Exercises · {exercises.length}</span>
+          <span className="secstat">{doneSets} sets done</span>
+        </div>
+        {exercises.length===0 && (
+          <div className="empty"><div className="emico">💪</div><div className="emtxt">Add exercises to begin</div></div>
+        )}
+        {exercises.map(entry=>(
+          <ExCard key={entry.entryId} entry={entry} allExercises={allExercises}
+            onUpdate={updateExercise} onRemove={()=>removeExercise(entry.entryId)}
+            addedIds={addedIds} onStartRest={()=>{}} restRem={null} />
+        ))}
+        <div className="addwrap">
+          <button className="addexbtn" onClick={()=>setShowBrowser(true)}>+ Add Exercise</button>
+        </div>
+      </div>
+      {showBrowser && (
+        <Browser allExercises={allExercises} addedIds={addedIds}
+          onAdd={ex=>{addExercise(ex);setShowBrowser(false);}}
+          onClose={()=>setShowBrowser(false)}
+          onOpenCustom={()=>{setShowBrowser(false);setShowCustom(true);}}
+        />
+      )}
+      {showCustom && (
+        <div className="moverlay">
+          <CustomModal
+            onSave={ex=>{setAllExercises(storage.getExercises());addExercise(ex);setShowCustom(false);}}
+            onClose={()=>{setShowCustom(false);setShowBrowser(true);}}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 }
 
 function HistoryScreen({ onBack }) {
@@ -1129,7 +1253,13 @@ function HistoryScreen({ onBack }) {
   const [selected, setSelected] = useState(null);
   useEffect(() => { setSessions(storage.getSessions().slice().reverse()); }, []);
 
-  if (selected) return <HistoryDetail session={selected} onBack={()=>setSelected(null)} />;
+  if (selected) return (
+    <HistoryDetail
+      session={selected}
+      onBack={()=>setSelected(null)}
+      onSessionUpdate={(u) => { setSessions(s=>s.map(x=>x.id===u.id?u:x)); setSelected(u); }}
+    />
+  );
 
   return (
     <div className="xscreen">
@@ -1224,11 +1354,11 @@ function TemplateEditorScreen({ allExercises, template, onSave, onBack }) {
                 {te._muscleGroup && <span className="mtag" style={{background:mc.bg,borderColor:mc.border,color:mc.text,fontSize:7,marginTop:3,display:"inline-block"}}>{te._muscleGroup}</span>}
               </div>
               <div className="tpe-inputs">
-                <input className="nin" type="number" min="1" max="20" value={te.targetSets} onChange={e=>updateEntry(idx,"targetSets",e.target.value)} title="Sets" />
+                <NumInput className="nin" value={te.targetSets} onChange={v=>updateEntry(idx,"targetSets",v)} />
                 <span className="sp">×</span>
-                <input className="nin" type="number" min="1" max="100" value={te.targetReps} onChange={e=>updateEntry(idx,"targetReps",e.target.value)} title="Reps" />
+                <NumInput className="nin" value={te.targetReps} onChange={v=>updateEntry(idx,"targetReps",v)} />
                 <span className="sp">@</span>
-                <input className="nin w" type="number" min="0" step="2.5" value={te.targetWeight} onChange={e=>updateEntry(idx,"targetWeight",e.target.value)} title="kg" />
+                <NumInput className="nin w" value={te.targetWeight} step={2.5} onChange={v=>updateEntry(idx,"targetWeight",v)} />
                 <span className="sp" style={{marginLeft:1}}>kg</span>
               </div>
               <button className="tpe-rm" onClick={()=>removeEntry(idx)}>−</button>
@@ -1318,58 +1448,55 @@ function MyTemplatesScreen({ allExercises, onBack }) {
   );
 }
 
-// ── Template Picker Modal ─────────────────────────────────────────────────────
-function TemplateModal({ allExercises, onStart, onClose }) {
+// ── Template Select Screen ───────────────────────────────────────────────────
+function TemplateSelectScreen({ allExercises, onStart, onBack }) {
   const userTemplates = storage.getUserTemplates();
   const exMap = new Map(allExercises.map(e => [e.id, e]));
   return (
-    <div className="moverlay" onClick={onClose}>
-      <div className="modal" onClick={e=>e.stopPropagation()}>
-        <div className="mhandle" />
-        <div className="mhdr">
-          <span className="mtitle">Start Workout</span>
-          <button className="mclosebtn" onClick={onClose}>✕</button>
-        </div>
-        <div className="blist" style={{padding:"4px 12px 20px"}}>
-          <div className="grplbl">Quick Start</div>
-          <div className="tmpl-item" onClick={()=>onStart(null)}>
-            <div className="tmpl-info">
-              <div className="tmpl-name">Empty Workout</div>
-              <div className="tmpl-exes">Start fresh — add exercises manually</div>
-            </div>
-            <div className="tmpl-arr">+</div>
+    <div className="xscreen">
+      <div className="xhdr">
+        <button className="backbtn" onClick={onBack}>← Back</button>
+        <span className="xtitle">Start Workout</span>
+      </div>
+      <div className="xscroll">
+        <div className="grplbl">Quick Start</div>
+        <div className="tmpl-item" onClick={()=>onStart(null)}>
+          <div className="tmpl-info">
+            <div className="tmpl-name">Empty Workout</div>
+            <div className="tmpl-exes">Start fresh — add exercises manually</div>
           </div>
-          {userTemplates.length > 0 && (
-            <>
-              <div className="grplbl" style={{marginTop:10}}>Your workouts</div>
-              {userTemplates.map(t=>{
-                const names = t.exercises.map(te=>exMap.get(te.exerciseId)?.name).filter(Boolean);
-                return (
-                  <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
-                    <div className="tmpl-info">
-                      <div className="tmpl-name">{t.name}</div>
-                      <div className="tmpl-exes">{names.join(" · ")}</div>
-                    </div>
-                    <div className="tmpl-arr">→</div>
-                  </div>
-                );
-              })}
-            </>
-          )}
-          <div className="grplbl" style={{marginTop:10}}>Preset workouts</div>
-          {TEMPLATES.map(t=>{
-            const names = t.exercises.map(te=>exMap.get(te.exerciseId)?.name).filter(Boolean);
-            return (
-              <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
-                <div className="tmpl-info">
-                  <div className="tmpl-name">{t.name}</div>
-                  <div className="tmpl-exes">{names.join(" · ")}</div>
-                </div>
-                <div className="tmpl-arr">→</div>
-              </div>
-            );
-          })}
+          <div className="tmpl-arr">+</div>
         </div>
+        {userTemplates.length > 0 && (
+          <>
+            <div className="grplbl" style={{marginTop:10}}>Your workouts</div>
+            {userTemplates.map(t=>{
+              const names = t.exercises.map(te=>exMap.get(te.exerciseId)?.name).filter(Boolean);
+              return (
+                <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
+                  <div className="tmpl-info">
+                    <div className="tmpl-name">{t.name}</div>
+                    <div className="tmpl-exes">{names.join(" · ")}</div>
+                  </div>
+                  <div className="tmpl-arr">→</div>
+                </div>
+              );
+            })}
+          </>
+        )}
+        <div className="grplbl" style={{marginTop:10}}>Preset workouts</div>
+        {TEMPLATES.map(t=>{
+          const names = t.exercises.map(te=>exMap.get(te.exerciseId)?.name).filter(Boolean);
+          return (
+            <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
+              <div className="tmpl-info">
+                <div className="tmpl-name">{t.name}</div>
+                <div className="tmpl-exes">{names.join(" · ")}</div>
+              </div>
+              <div className="tmpl-arr">→</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1387,7 +1514,6 @@ export default function LiftLog() {
   const [restTotal, setRestTotal]       = useState(120);
   const [restRem, setRestRem]           = useState(null);
   const restTickRef                     = useRef(null);
-  const [showTemplates, setShowTemplates] = useState(false);
   const [allExercises, setAllExercises] = useState([]);
   const [elapsed, setElapsed]           = useState(0);
   const timerRef = useRef(null);
@@ -1467,23 +1593,30 @@ export default function LiftLog() {
         {screen==="session" && (
           <div className="topbar">
             <button className="homebtn-topbar" onClick={goHome}>← Home</button>
+            <input className="sname-input" value={session?.name||""} placeholder="Session name..."
+              onChange={e=>setSession(s=>({...s,name:e.target.value}))} />
             <div className="topbar-r">
               <div className="live-dot" />
               <div className="clock">{fmtMs(elapsed)}</div>
-              <input className="sname-input" value={session?.name||""} placeholder="Session name..."
-                onChange={e=>setSession(s=>({...s,name:e.target.value}))} />
             </div>
           </div>
         )}
 
         {screen==="home" && (
           <Home
-            onStart={()=>setShowTemplates(true)}
+            onStart={()=>setScreen("templateselect")}
             onExplore={()=>setScreen("explore")}
             onHistory={()=>setScreen("history")}
             onMyTemplates={()=>setScreen("mytemplates")}
             hasActiveSession={hasActiveSession}
             onResume={()=>setScreen("session")}
+          />
+        )}
+        {screen==="templateselect" && (
+          <TemplateSelectScreen
+            allExercises={allExercises}
+            onStart={t=>{startSession(t);}}
+            onBack={()=>setScreen("home")}
           />
         )}
         {screen==="explore" && <ExploreScreen allExercises={allExercises} onBack={()=>setScreen("home")} />}
@@ -1515,13 +1648,6 @@ export default function LiftLog() {
           </div>
         </>}
 
-        {showTemplates && (
-          <TemplateModal
-            allExercises={allExercises}
-            onStart={t=>{setShowTemplates(false);startSession(t);}}
-            onClose={()=>setShowTemplates(false)}
-          />
-        )}
         {showBrowser && (
           <Browser allExercises={allExercises} addedIds={addedIds}
             onAdd={ex=>{addExercise(ex);}}
