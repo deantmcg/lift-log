@@ -1452,7 +1452,7 @@ export default function LiftLog() {
     storage.saveSession(done); setSession(done); setScreen("summary");
     setRestEndTime(null); setShowRest(false);
   };
-  const discard = () => { setExercises([]); setSession(null); setScreen("home"); setRestEndTime(null); setShowRest(false); };
+  const cancel = () => { setExercises([]); setSession(null); setScreen("home"); setRestEndTime(null); setShowRest(false); };
   const goHome  = () => setScreen("home");
 
   const addedIds = new Set(exercises.map(e=>e.exerciseId));
@@ -1510,7 +1510,7 @@ export default function LiftLog() {
             <button className="addexbtn" onClick={()=>setShowBrowser(true)}>+ Add Exercise</button>
           </div>
           <div className="botbar">
-            <button className="discbtn" onClick={discard}>Discard</button>
+            <button className="discbtn" onClick={cancel}>Cancel</button>
             <button className="finbtn" onClick={finish} disabled={exercises.length===0}>Finish Workout</button>
           </div>
         </>}
