@@ -1,5 +1,4 @@
 -- database/schema.sql
-
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS users (
@@ -35,19 +34,47 @@ CREATE TABLE IF NOT EXISTS user_settings (
     show_timer BOOLEAN DEFAULT true
 );
 
-CREATE TABLE IF NOT EXISTS exercises (
-    id VARCHAR(50) PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+-- SAFELY REBUILD EXERCISE & WORKOUT TABLES FOR NORMALIZATION (PRESERVES USERS!)
+DROP TABLE IF EXISTS session_sets CASCADE;
+DROP TABLE IF EXISTS session_exercises CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS workout_exercises CASCADE;
+DROP TABLE IF EXISTS workouts CASCADE;
+DROP TABLE IF EXISTS exercises CASCADE;
+DROP TABLE IF EXISTS categories CASCADE;
+DROP TABLE IF EXISTS muscle_groups CASCADE;
+DROP TABLE IF EXISTS equipment CASCADE;
+
+CREATE TABLE categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE muscle_groups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE equipment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE exercises (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE, -- NULL for system exercises
     name VARCHAR(100) NOT NULL,
-    muscle_group VARCHAR(50) NOT NULL,
-    equipment VARCHAR(50) NOT NULL,
-    category VARCHAR(20) NOT NULL,
+    category_id UUID REFERENCES categories(id) ON DELETE RESTRICT,
+    muscle_group_id UUID REFERENCES muscle_groups(id) ON DELETE RESTRICT,
+    equipment_id UUID REFERENCES equipment(id) ON DELETE RESTRICT,
     description TEXT,
     is_custom BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS workouts (
+CREATE UNIQUE INDEX IF NOT EXISTS idx_system_exercises_name ON exercises(name) WHERE user_id IS NULL;
+
+CREATE TABLE workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -55,16 +82,16 @@ CREATE TABLE IF NOT EXISTS workouts (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS workout_exercises (
+CREATE TABLE workout_exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workout_id UUID REFERENCES workouts(id) ON DELETE CASCADE,
-    exercise_id VARCHAR(50) REFERENCES exercises(id),
+    exercise_id UUID REFERENCES exercises(id) ON DELETE CASCADE,
     order_index INTEGER NOT NULL,
     target_sets INTEGER, 
     target_reps INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(100),
@@ -74,14 +101,14 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS session_exercises (
+CREATE TABLE session_exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
-    exercise_id VARCHAR(50) REFERENCES exercises(id),
+    exercise_id UUID REFERENCES exercises(id) ON DELETE CASCADE,
     order_index INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS session_sets (
+CREATE TABLE session_sets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_exercise_id UUID REFERENCES session_exercises(id) ON DELETE CASCADE,
     reps INTEGER,

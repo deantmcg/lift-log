@@ -11,20 +11,17 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
 
-    // Find user by username or email
     const result = await db.query('SELECT id, password_hash FROM users WHERE username = $1 OR email = $1', [username]);
     if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
     
     const user = result.rows[0];
     
-    // We let Postgres natively verify the hash
     const matchRes = await db.query('SELECT password_hash = crypt($1, password_hash) AS match FROM users WHERE id = $2', [password, user.id]);
     
     if (!matchRes.rows[0].match) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    // Sign long-lived stateless token
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1y' });
     res.json({ success: true, token });
   } catch (error) {
@@ -32,7 +29,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Middleware to protect routes below
 const authenticate = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   if (!authHeader) return res.status(401).json({ error: 'Authentication required' });
@@ -46,7 +42,6 @@ const authenticate = (req, res, next) => {
   });
 };
 
-// Apply auth middleware to all routes below this line
 router.use(authenticate);
 
 // --- SETTINGS ---
@@ -56,7 +51,7 @@ router.get('/settings', async (req, res) => {
     const result = await db.query('SELECT theme, default_rest_seconds AS "defaultRest", show_timer AS "showTimer" FROM user_settings WHERE user_id = $1', [userId]);
     
     if (result.rows.length === 0) {
-      return res.json({ theme: "green", defaultRest: 120, showTimer: true }); // Defaults
+      return res.json({ theme: "green", defaultRest: 120, showTimer: true });
     }
     res.json(result.rows[0]);
   } catch (error) {
@@ -87,7 +82,14 @@ router.put('/settings', async (req, res) => {
 router.get('/exercises', async (req, res) => {
   try {
     const userId = req.userId;
-    const result = await db.query('SELECT * FROM exercises WHERE user_id IS NULL OR user_id = $1', [userId]);
+    const result = await db.query(`
+      SELECT e.id, e.name, mg.name AS muscle_group, eq.name AS equipment, c.name AS category, e.description, e.is_custom
+      FROM exercises e
+      LEFT JOIN muscle_groups mg ON e.muscle_group_id = mg.id
+      LEFT JOIN equipment eq ON e.equipment_id = eq.id
+      LEFT JOIN categories c ON e.category_id = c.id
+      WHERE e.user_id IS NULL OR e.user_id = $1
+    `, [userId]);
     
     const exercises = result.rows.map(row => ({
       id: row.id,
@@ -108,14 +110,23 @@ router.get('/exercises', async (req, res) => {
 router.post('/exercises', async (req, res) => {
   try {
     const userId = req.userId;
-    const { id, name, muscleGroup, equipment, category, description } = req.body;
+    const { name, muscleGroup, equipment, category, description } = req.body;
     
-    await db.query(`
-      INSERT INTO exercises (id, user_id, name, muscle_group, equipment, category, description, is_custom)
+    const mgRes = await db.query('INSERT INTO muscle_groups (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [muscleGroup]);
+    const eqRes = await db.query('INSERT INTO equipment (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [equipment]);
+    const catRes = await db.query('INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [category]);
+    
+    const mgId = mgRes.rows[0].id;
+    const eqId = eqRes.rows[0].id;
+    const catId = catRes.rows[0].id;
+    
+    const exRes = await db.query(`
+      INSERT INTO exercises (user_id, name, muscle_group_id, equipment_id, category_id, description, is_custom)
       VALUES ($1, $2, $3, $4, $5, $6, true)
-    `, [id, userId, name, muscleGroup, equipment, category, description]);
+      RETURNING id
+    `, [userId, name, mgId, eqId, catId, description]);
     
-    res.json({ success: true, id });
+    res.json({ success: true, id: exRes.rows[0].id });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -130,9 +141,11 @@ router.get('/workouts', async (req, res) => {
     const workouts = [];
     for (let w of workoutsRes.rows) {
       const exRes = await db.query(`
-        SELECT we.*, e.name, e.muscle_group, e.equipment 
+        SELECT we.*, e.name, mg.name AS muscle_group, eq.name AS equipment 
         FROM workout_exercises we
         JOIN exercises e ON e.id = we.exercise_id
+        LEFT JOIN muscle_groups mg ON e.muscle_group_id = mg.id
+        LEFT JOIN equipment eq ON e.equipment_id = eq.id
         WHERE we.workout_id = $1
         ORDER BY we.order_index ASC
       `, [w.id]);
@@ -204,9 +217,10 @@ router.get('/sessions', async (req, res) => {
     const sessions = [];
     for (let s of sessionsRes.rows) {
       const seRes = await db.query(`
-        SELECT se.*, e.name, e.muscle_group 
+        SELECT se.*, e.name, mg.name AS muscle_group 
         FROM session_exercises se
         JOIN exercises e ON e.id = se.exercise_id
+        LEFT JOIN muscle_groups mg ON e.muscle_group_id = mg.id
         WHERE se.session_id = $1
         ORDER BY se.order_index ASC
       `, [s.id]);
