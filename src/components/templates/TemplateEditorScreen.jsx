@@ -20,13 +20,14 @@ export function TemplateEditorScreen({ allExercises, template, onSave, onBack })
   const [showPicker, setShowPicker] = useState(false);
 
   const addExercise = (ex) => {
+    const weight = ex.lastWeight !== undefined && ex.lastWeight !== null ? Number(ex.lastWeight) : constants.DEFAULT_TARGET_WEIGHT;
     setEntries(p => [...p, { 
       exerciseId: ex.id, 
       _name: ex.name, 
       _muscleGroup: ex.muscleGroup, 
       targetSets: constants.DEFAULT_TARGET_SETS, 
       targetReps: constants.DEFAULT_TARGET_REPS, 
-      targetWeight: constants.DEFAULT_TARGET_WEIGHT 
+      targetWeight: weight 
     }]);
     setShowPicker(false);
   };

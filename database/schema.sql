@@ -92,7 +92,8 @@ CREATE TABLE workout_exercises (
     exercise_id INTEGER REFERENCES exercises(id) ON DELETE CASCADE,
     order_index INTEGER NOT NULL,
     target_sets INTEGER, 
-    target_reps INTEGER
+    target_reps INTEGER,
+    target_weight NUMERIC
 );
 
 CREATE TABLE sessions (
@@ -151,6 +152,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Exercises
+DROP FUNCTION IF EXISTS get_exercises(INTEGER);
 CREATE OR REPLACE FUNCTION get_exercises(p_user_id INTEGER)
 RETURNS TABLE (
     id INTEGER, 
@@ -159,23 +161,41 @@ RETURNS TABLE (
     equipment VARCHAR, 
     category VARCHAR, 
     description TEXT, 
-    "isCustom" BOOLEAN
+    "isCustom" BOOLEAN,
+    "lastWeight" NUMERIC
 ) AS $$
 BEGIN
-    RETURN QUERY
+    RETURN QUERY 
     SELECT 
         e.id, 
         e.name, 
-        mg.name::VARCHAR AS "muscleGroup", 
-        eq.name::VARCHAR AS equipment, 
-        c.name::VARCHAR AS category, 
+        mg.name AS "muscleGroup", 
+        eq.name AS equipment, 
+        c.name AS category, 
         e.description, 
-        e.is_custom AS "isCustom"
+        e.is_custom AS "isCustom",
+        (
+            SELECT ss.weight 
+            FROM session_sets ss
+            JOIN session_exercises se ON se.id = ss.session_exercise_id
+            JOIN sessions s ON s.id = se.session_id
+            WHERE se.exercise_id = e.id AND s.user_id = p_user_id AND ss.is_completed = true
+            ORDER BY s.start_time DESC, se.order_index DESC, ss.order_index DESC
+            LIMIT 1
+        ) AS "lastWeight"
     FROM exercises e
-    LEFT JOIN muscle_groups mg ON e.muscle_group_id = mg.id
-    LEFT JOIN equipment eq ON e.equipment_id = eq.id
-    LEFT JOIN categories c ON e.category_id = c.id
-    WHERE e.user_id IS NULL OR e.user_id = p_user_id;
+    JOIN muscle_groups mg ON e.muscle_group_id = mg.id
+    JOIN equipment eq ON e.equipment_id = eq.id
+    JOIN categories c ON e.category_id = c.id
+    WHERE e.user_id IS NULL OR e.user_id = p_user_id
+    ORDER BY e.name ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE PROCEDURE delete_session(p_user_id INTEGER, p_session_id VARCHAR)
+AS $$
+BEGIN
+    DELETE FROM sessions WHERE id = p_session_id AND user_id = p_user_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -227,8 +247,9 @@ BEGIN
                 json_build_object(
                     'exerciseId', we.exercise_id,
                     'name', e.name,
-                    'targetSets', we.target_sets,
-                    'targetReps', we.target_reps
+                    'targetSets', COALESCE(we.target_sets, 3),
+                    'targetReps', COALESCE(we.target_reps, 10),
+                    'targetWeight', COALESCE(we.target_weight, 0)
                 ) ORDER BY we.order_index ASC
             ) FILTER (WHERE we.id IS NOT NULL), '[]'::json
         ) AS exercises
@@ -253,13 +274,14 @@ BEGIN
     
     FOR v_ex IN SELECT * FROM jsonb_array_elements(p_exercises)
     LOOP
-        INSERT INTO workout_exercises (workout_id, exercise_id, order_index, target_sets, target_reps)
+        INSERT INTO workout_exercises (workout_id, exercise_id, order_index, target_sets, target_reps, target_weight)
         VALUES (
             v_workout_id, 
             (v_ex->>'exerciseId')::INTEGER, 
             v_idx, 
             COALESCE((v_ex->>'targetSets')::INTEGER, 3), 
-            COALESCE((v_ex->>'targetReps')::INTEGER, 10)
+            COALESCE((v_ex->>'targetReps')::INTEGER, 10),
+            (v_ex->>'targetWeight')::NUMERIC
         );
         v_idx := v_idx + 1;
     END LOOP;

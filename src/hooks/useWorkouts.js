@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { storage } from '../services/storage';
+import { constants } from '../data/constants';
 import { uid, makeEntry, makeSet, fmtDate } from '../utils/helpers';
 
 export function useWorkouts(allExercises) {
@@ -16,10 +17,22 @@ export function useWorkouts(allExercises) {
         const ex = allExercises.find(e => e.id===te.exerciseId);
         if (!ex) return null;
         const entry = makeEntry(ex);
-        entry.targetSets   = te.targetSets;
-        entry.targetReps   = te.targetReps;
-        entry.targetWeight = te.targetWeight;
-        entry.sets = Array.from({length: te.targetSets}, () => makeSet(te.targetReps, te.targetWeight));
+        entry.targetSets   = te.targetSets ?? te.targetsets ?? te.target_sets ?? 3;
+        entry.targetReps   = te.targetReps ?? te.targetreps ?? te.target_reps ?? 10;
+        
+        const lw = ex.lastWeight ?? ex.lastweight ?? ex.last_weight;
+        const tw = te.targetWeight ?? te.targetweight ?? te.target_weight;
+        
+        // Priority: History > Template > Default
+        let w = constants.DEFAULT_TARGET_WEIGHT;
+        if (lw !== undefined && lw !== null && Number(lw) > 0) {
+          w = Number(lw);
+        } else if (tw !== undefined && tw !== null && Number(tw) > 0) {
+          w = Number(tw);
+        }
+        
+        entry.targetWeight = w;
+        entry.sets = Array.from({length: entry.targetSets}, () => makeSet(entry.targetReps, w));
         return entry;
       }).filter(Boolean);
     }

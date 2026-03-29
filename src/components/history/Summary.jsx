@@ -11,7 +11,9 @@ export function Summary({ session, onNew }) {
 
   const totalSets = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
   const totalVol  = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+s.reps*s.weight,0),0);
-  const dur = session.endTime - session.startTime;
+  const sTs = new Date(session.startTime).getTime();
+  const eTs = new Date(session.endTime).getTime();
+  const dur = (sTs && eTs) ? eTs - sTs : 0;
   const prs = [];
   
   session.exercises.forEach(entry => {

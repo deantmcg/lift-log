@@ -88,7 +88,14 @@ export default function App() {
   };
 
   const handleStart = (t) => { startSession(t); setScreen("session"); };
-  const handleFinish = () => { finish(); setScreen("summary"); setRestEndTime(null); setShowRest(false); setTimerEntryId(null); };
+  const handleFinish = async () => { 
+    await finish(); 
+    loadInitialData(); 
+    setScreen("summary"); 
+    setRestEndTime(null); 
+    setShowRest(false); 
+    setTimerEntryId(null); 
+  };
   const handleCancel = () => { cancel(); setScreen("home"); setRestEndTime(null); setShowRest(false); setTimerEntryId(null); };
 
   const addedIds = new Set(exercises.map(e => e.exerciseId));

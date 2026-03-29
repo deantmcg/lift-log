@@ -10,6 +10,16 @@ import { CustomModal } from '../workout/CustomModal';
 function SessionEditScreen({ origSession, onSave, onCancel }) {
   const [session, setSession] = useState(() => ({ ...origSession }));
   const [exercises, setExercises] = useState(() => origSession.exercises.map(e => ({ ...e, sets: e.sets.map(s => ({...s})) })));
+  
+  const toDTL = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+
+  const [startTime, setStartTime] = useState(() => toDTL(origSession.startTime));
+  const [endTime, setEndTime] = useState(() => toDTL(origSession.endTime));
   const [allExercises, setAllExercises] = useState([]);
   useEffect(() => { storage.getExercises().then(setAllExercises); }, []);
   const addedIds = new Set(exercises.map(e=>e.exerciseId));
@@ -27,13 +37,23 @@ function SessionEditScreen({ origSession, onSave, onCancel }) {
         <input className="sname-input" value={session.name} placeholder="Session name..."
           onChange={e=>setSession(s=>({...s,name:e.target.value}))} style={{flex:1,marginLeft:8}} />
         <button className="hist-save-btn" onClick={async ()=>{
-          const updated = { ...session, exercises };
-          // Note: ideally this should call PUT on the server if supported
+          const updated = { 
+            ...session, 
+            exercises, 
+            startTime: new Date(startTime).getTime(),
+            endTime: new Date(endTime).getTime()
+          };
           await storage.saveSession(updated);
           onSave(updated);
         }}>Save</button>
       </div>
       <div className="xscroll">
+        <div style={{padding: "0 12px", marginBottom: 12}}>
+          <div className="flbl">Start Time</div>
+          <input className="fin" type="datetime-local" value={startTime} onChange={e=>setStartTime(e.target.value)} />
+          <div className="flbl" style={{marginTop:8}}>End Time</div>
+          <input className="fin" type="datetime-local" value={endTime} onChange={e=>setEndTime(e.target.value)} />
+        </div>
         <div className="secbar">
           <span className="seclbl">Exercises · {exercises.length}</span>
           <span className="secstat">{doneSets} sets done</span>
@@ -86,7 +106,9 @@ SessionEditScreen.propTypes = {
 function HistoryDetail({ session, onBack }) {
   const totalSets = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0);
   const totalVol  = session.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+s.reps*s.weight,0),0);
-  const dur       = session.endTime ? session.endTime - session.startTime : 0;
+  const startTs   = new Date(session.startTime).getTime();
+  const endTs     = new Date(session.endTime).getTime();
+  const dur       = (startTs && endTs) ? endTs - startTs : 0;
   const [editing, setEditing] = useState(false);
   
   if (editing) {
@@ -129,6 +151,14 @@ function HistoryDetail({ session, onBack }) {
             );
           })}
         </div>
+        <div style={{padding: "16px 12px"}}>
+          <button className="discbtn" style={{width:"100%", background:"#221111", color:"#ff4444", borderColor:"#442222"}} 
+            onClick={async ()=>{
+              if (!confirm("Delete this session forever?")) return;
+              await storage.deleteSession(session.id);
+              onBack(null); // signal deletion
+            }}>Delete Session</button>
+        </div>
       </div>
     </div>
   );
@@ -152,7 +182,11 @@ export function HistoryScreen({ onBack }) {
       <HistoryDetail
         session={selected}
         onBack={(updated) => {
-          if (updated && updated.id) {
+          if (updated === null) {
+            // Deleted
+            setSessions(s => s.filter(x => x.id !== selected.id));
+            setSelected(null);
+          } else if (updated && updated.id) {
             setSessions(s => s.map(x => x.id === updated.id ? updated : x));
             setSelected(updated);
           } else {
@@ -178,7 +212,9 @@ export function HistoryScreen({ onBack }) {
         )}
         {sessions.map(s=>{
           const vol=s.exercises?.reduce((a,e)=>a+(e.sets||[]).filter(x=>x.done).reduce((b,x)=>b+x.reps*x.weight,0),0)||0;
-          const dur=s.endTime?s.endTime-s.startTime:0;
+          const sTs = new Date(s.startTime).getTime();
+          const eTs = new Date(s.endTime).getTime();
+          const dur = (sTs && eTs) ? eTs - sTs : 0;
           const totalSets=s.exercises?.reduce((a,e)=>a+(e.sets||[]).filter(x=>x.done).length,0)||0;
           return (
             <div key={s.id} className="histitem" onClick={()=>setSelected(s)}>

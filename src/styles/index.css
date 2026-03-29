@@ -895,14 +895,17 @@ body::before {
   flex-shrink: 0;
   background: var(--surf2);
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: 4px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 6px 10px;
-  min-height: 30px;
+  padding: 8px 14px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.1s;
   font-family: 'Rajdhani', sans-serif;
@@ -1864,4 +1867,50 @@ body::before {
   --aglow: #c03dff28;
   --accent-rgb: 192, 61, 255;
   --bg-stripes: rgba(6, 0, 8, 0.04);
+}
+
+/* Custom UI Enhancements */
+.red {
+  color: #ff4444 !important;
+  border-color: #442222 !important;
+}
+.red:hover {
+  background: #330000 !important;
+}
+
+.reorder-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: 8px;
+}
+.hbtn.ord {
+  font-size: 8px;
+  padding: 0 4px;
+  height: 14px;
+  line-height: 12px;
+  opacity: 0.5;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+}
+.hbtn.ord:hover {
+  opacity: 1;
+  background: var(--surf3);
+}
+
+.admin-form {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+
+/* Ensure filter chips are easy to tap on mobile */
+@media (max-width: 600px) {
+  .fchip {
+    min-height: 44px;
+    font-size: 14px;
+    padding: 10px 16px;
+  }
 }
