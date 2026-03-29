@@ -108,6 +108,16 @@ router.post('/workouts', async (req, res) => {
   }
 });
 
+router.put('/workouts/:id', async (req, res) => {
+  try {
+    const { name, exercises } = req.body;
+    await db.query('SELECT update_workout($1, $2, $3, $4::jsonb)', [req.userId, req.params.id, name, JSON.stringify(exercises)]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/workouts/:id', async (req, res) => {
   try {
     const check = await db.query('SELECT is_custom FROM workouts WHERE id = $1', [req.params.id]);

@@ -290,6 +290,31 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION update_workout(p_user_id INTEGER, p_workout_id INTEGER, p_name VARCHAR, p_exercises JSONB)
+RETURNS VOID AS $$
+DECLARE
+    v_ex JSONB;
+    v_idx INTEGER := 0;
+BEGIN
+    UPDATE workouts SET name = p_name WHERE id = p_workout_id AND user_id = p_user_id;
+    DELETE FROM workout_exercises WHERE workout_id = p_workout_id;
+    
+    FOR v_ex IN SELECT * FROM jsonb_array_elements(p_exercises)
+    LOOP
+        INSERT INTO workout_exercises (workout_id, exercise_id, order_index, target_sets, target_reps, target_weight)
+        VALUES (
+            p_workout_id, 
+            (v_ex->>'exerciseId')::INTEGER, 
+            v_idx, 
+            COALESCE((v_ex->>'targetSets')::INTEGER, 3), 
+            COALESCE((v_ex->>'targetReps')::INTEGER, 10),
+            (v_ex->>'targetWeight')::NUMERIC
+        );
+        v_idx := v_idx + 1;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE PROCEDURE delete_workout(p_user_id INTEGER, p_workout_id INTEGER)
 AS $$
 BEGIN

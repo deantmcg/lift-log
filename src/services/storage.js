@@ -39,6 +39,12 @@ export const storage = {
   saveCustomExercise: async (ex) => await authFetch('/api/exercises', { method: 'POST', body: JSON.stringify(ex) }),
   
   getUserTemplates: async () => { const r = await authFetch('/api/workouts'); return r.json(); },
+  saveUserTemplate: async (t) => {
+    const method = t.id ? 'PUT' : 'POST';
+    const url = t.id ? `/api/workouts/${t.id}` : '/api/workouts';
+    const r = await authFetch(url, { method, body: JSON.stringify(t) });
+    return r.json();
+  },
   deleteUserTemplate: async (id) => await authFetch(`/api/workouts/${id}`, { method: 'DELETE' }),
 
   deleteSession: async (id) => await authFetch(`/api/sessions/${id}`, { method: 'DELETE' }),
