@@ -32,6 +32,13 @@ export function TemplateEditorScreen({ allExercises, template, onSave, onBack })
   };
   const removeEntry = (idx) => setEntries(p => p.filter((_, i) => i !== idx));
   const updateEntry = (idx, field, val) => setEntries(p => p.map((e, i) => i === idx ? { ...e, [field]: +val || 0 } : e));
+  const moveEntry = (idx, dir) => setEntries(p => {
+    const next = [...p];
+    const swap = idx + dir;
+    if (swap < 0 || swap >= next.length) return next;
+    [next[idx], next[swap]] = [next[swap], next[idx]];
+    return next;
+  });
 
   const save = async () => {
     if (!name.trim() || entries.length === 0) return;
@@ -78,7 +85,11 @@ export function TemplateEditorScreen({ allExercises, template, onSave, onBack })
                 <NumInput className="nin w" value={te.targetWeight} step={2.5} onChange={v=>updateEntry(idx,"targetWeight",v)} />
                 <span className="sp" style={{marginLeft:1}}>kg</span>
               </div>
-              <button className="tpe-rm" onClick={()=>removeEntry(idx)}>−</button>
+              <div className="reorder-btns">
+                <button className="hbtn ord" onClick={()=>moveEntry(idx,-1)}>▲</button>
+                <button className="hbtn ord" onClick={()=>moveEntry(idx,1)}>▼</button>
+              </div>
+              <button className="tpe-rm red" onClick={()=>removeEntry(idx)}>🗑</button>
             </div>
           );
         })}

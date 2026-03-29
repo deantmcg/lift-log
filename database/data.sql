@@ -74,7 +74,10 @@ INSERT INTO exercises (id, name, category_id, muscle_group_id, equipment_id, des
 (47, 'Ab Rollout', 4, 6, 5, 'Kneel with an ab wheel. Roll forward until your body is nearly flat, bracing core. Contract abs to pull back. An advanced anti-extension exercise.', false),
 (48, 'Cable Crunch', 4, 6, 3, 'Kneel at a high cable with a rope attachment behind your head. Crunch down, bringing elbows toward knees. Allows progressive overload on abs.', false),
 (49, 'Hanging Leg Raise', 4, 6, 5, 'Hang from a pull-up bar and lift legs to waist height. High-intensity exercise for the lower abdominals and hip flexors.', false),
-(50, 'Russian Twist', 4, 6, 2, 'Sit on the floor, lean back slightly, and rotate a weight from side to side. Targets the obliques and rotational core strength.', false)
+(50, 'Russian Twist', 4, 6, 2, 'Sit on the floor, lean back slightly, and rotate a weight from side to side. Targets the obliques and rotational core strength.', false),
+(51, 'Iso-Lateral Horizontal Chest Press', 1, 1, 4, 'Sit in a plate-loaded machine and press each arm independently. The iso-lateral design eliminates imbalances and allows a longer range of motion than standard machine press.', false),
+(52, 'Iso-Lateral Shoulder Press', 1, 2, 4, 'Seated overhead press machine with independent arm movement. Corrects left/right strength imbalances and reduces shoulder strain compared to barbell pressing.', false),
+(53, 'Farmer''s Carry', 3, 5, 2, 'Hold heavy dumbbells or handles at your sides and walk for a set distance or time. Builds grip strength, core stability, and full-body conditioning simultaneously.', false)
 ON CONFLICT DO NOTHING;
 
 -- Resync sequential counters manually so subsequent user inserts don't collide

@@ -30,6 +30,13 @@ export function useWorkouts(allExercises) {
   const addExercise    = (ex) => setExercises(p=>[...p, makeEntry(ex)]);
   const updateExercise = (u)  => setExercises(p=>p.map(e=>e.entryId===u.entryId?u:e));
   const removeExercise = (id) => setExercises(p=>p.filter(e=>e.entryId!==id));
+  const moveExercise   = (idx, dir) => setExercises(p => {
+    const next = [...p];
+    const swap = idx + dir;
+    if (swap < 0 || swap >= next.length) return next;
+    [next[idx], next[swap]] = [next[swap], next[idx]];
+    return next;
+  });
 
   const finish = async () => {
     const done = { ...session, exercises, endTime:Date.now() };
@@ -43,5 +50,5 @@ export function useWorkouts(allExercises) {
     setSession(null);
   };
 
-  return { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, finish, cancel };
+  return { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, moveExercise, finish, cancel };
 }

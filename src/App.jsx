@@ -16,8 +16,11 @@ import { CustomModal } from './components/workout/CustomModal';
 import { RestTimer } from './components/workout/RestTimer';
 import { SettingsScreen } from './components/settings/SettingsScreen';
 import { LoginScreen } from './components/auth/LoginScreen';
+import { AdminScreen } from './components/admin/AdminScreen';
 
 import './styles/index.css';
+
+const ADMIN_EMAIL = 'deanmcguigan@hotmail.com';
 
 export default function App() {
   const [screen, setScreen] = useState("home");
@@ -27,6 +30,9 @@ export default function App() {
   const [showRest, setShowRest] = useState(false);
   const [restEndTime, setRestEndTime] = useState(null);
   const [restTotal, setRestTotal] = useState(120);
+  // Track which exercise entry started the timer so other rows don't show it as running
+  const [timerEntryId, setTimerEntryId] = useState(null);
+
   const [settings, setSettings] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('ll_token'));
   const [loading, setLoading] = useState(true);
@@ -63,28 +69,32 @@ export default function App() {
 
   const [allExercises, setAllExercises] = useState([]);
 
-  const { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, finish, cancel } = useWorkouts(allExercises);
+  const { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, moveExercise, finish, cancel } = useWorkouts(allExercises);
 
   const elapsed = useTimer(session?.startTime, screen === "session" && session);
 
-  const handleRestButton = () => {
-    if (restEndTime && restEndTime > Date.now() && showRest === false) {
+  const handleRestButton = (entryId) => {
+    if (timerEntryId === entryId && restEndTime && restEndTime > Date.now() && showRest === false) {
+      // Same entry, timer already running — just re-open the overlay
       setShowRest(true);
     } else {
+      // New entry ticked, or same entry but timer expired — start fresh
       const dr = settings ? settings.defaultRest : 120;
       setRestEndTime(Date.now() + dr * 1000);
       setRestTotal(dr);
+      setTimerEntryId(entryId);
       setShowRest(true);
     }
   };
 
   const handleStart = (t) => { startSession(t); setScreen("session"); };
-  const handleFinish = () => { finish(); setScreen("summary"); setRestEndTime(null); setShowRest(false); };
-  const handleCancel = () => { cancel(); setScreen("home"); setRestEndTime(null); setShowRest(false); };
+  const handleFinish = () => { finish(); setScreen("summary"); setRestEndTime(null); setShowRest(false); setTimerEntryId(null); };
+  const handleCancel = () => { cancel(); setScreen("home"); setRestEndTime(null); setShowRest(false); setTimerEntryId(null); };
 
   const addedIds = new Set(exercises.map(e => e.exerciseId));
   const doneSets = exercises.reduce((a, e) => a + e.sets.filter(s => s.done).length, 0);
   const hasActiveSession = session && !session.endTime;
+  const isAdmin = settings?.email === ADMIN_EMAIL;
 
   if (!isAuthenticated) return <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
   if (loading) return <div className="app"><div className="empty" style={{ marginTop: "50%" }}>Loading data...</div></div>;
@@ -105,6 +115,8 @@ export default function App() {
           hasActiveSession={hasActiveSession}
           onResume={() => setScreen("session")}
           onSettings={() => setScreen("settings")}
+          isAdmin={isAdmin}
+          onAdmin={() => setScreen("admin")}
         />
       )}
 
@@ -128,6 +140,7 @@ export default function App() {
       {screen === "history" && <HistoryScreen onBack={() => setScreen("home")} />}
       {screen === "mytemplates" && <MyTemplatesScreen allExercises={allExercises} onBack={() => setScreen("home")} />}
       {screen === "summary" && session && <Summary session={session} onNew={() => { setScreen("home"); }} />}
+      {screen === "admin" && <AdminScreen allExercises={allExercises} onBack={() => { setScreen("home"); loadInitialData(); }} />}
 
       {screen === "session" && session && <>
         <div className="exsec">
@@ -138,10 +151,15 @@ export default function App() {
           {exercises.length === 0 && (
             <div className="empty"><div className="emico">💪</div><div className="emtxt">Add exercises to begin</div></div>
           )}
-          {exercises.map(entry => (
+          {exercises.map((entry, idx) => (
             <ExerciseCard key={entry.entryId} entry={entry} allExercises={allExercises}
               onUpdate={updateExercise} onRemove={() => removeExercise(entry.entryId)}
-              addedIds={addedIds} onStartRest={handleRestButton} restRem={restRem} />
+              addedIds={addedIds}
+              onStartRest={() => handleRestButton(entry.entryId)}
+              restRem={timerEntryId === entry.entryId ? restRem : null}
+              onMoveUp={() => moveExercise(idx, -1)}
+              onMoveDown={() => moveExercise(idx, 1)}
+            />
           ))}
         </div>
         <div className="addwrap">
@@ -176,7 +194,7 @@ export default function App() {
           total={restTotal}
           onSetTotal={(s) => { setRestTotal(s); setRestEndTime(Date.now() + s * 1000); }}
           onClose={() => setShowRest(false)}
-          onSkip={() => { setRestEndTime(null); setShowRest(false); }}
+          onSkip={() => { setRestEndTime(null); setShowRest(false); setTimerEntryId(null); }}
         />
       )}
     </div>

@@ -40,5 +40,9 @@ export const storage = {
   
   getUserTemplates: async () => { const r = await authFetch('/api/workouts'); return r.json(); },
   saveUserTemplate: async (t) => await authFetch('/api/workouts', { method: 'POST', body: JSON.stringify(t) }),
-  deleteUserTemplate: async (id) => await authFetch(`/api/workouts/${id}`, { method: 'DELETE' })
+  deleteUserTemplate: async (id) => await authFetch(`/api/workouts/${id}`, { method: 'DELETE' }),
+
+  adminUpdateExercise: async (id, data) => { const r = await authFetch(`/api/admin/exercises/${id}`, { method: 'PUT', body: JSON.stringify(data) }); if (!r.ok) { const e = await r.json(); throw new Error(e.error); } return r.json(); },
+  adminCreateExercise: async (data) => { const r = await authFetch('/api/admin/exercises', { method: 'POST', body: JSON.stringify(data) }); if (!r.ok) { const e = await r.json(); throw new Error(e.error); } return r.json(); },
+  adminDeleteExercise: async (id) => await authFetch(`/api/admin/exercises/${id}`, { method: 'DELETE' }),
 };

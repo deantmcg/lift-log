@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { storage } from '../../services/storage';
 import { fmtDate } from '../../utils/helpers';
 
-export function Home({ onStart, onExplore, onHistory, onMyTemplates, hasActiveSession, onResume, onSettings }) {
+export function Home({ onStart, onExplore, onHistory, onMyTemplates, hasActiveSession, onResume, onSettings, isAdmin, onAdmin }) {
   const [recent, setRecent] = useState([]);
   useEffect(() => { storage.getSessions().then(s => setRecent(s.slice(0, 3))); }, []);
 
@@ -22,6 +22,7 @@ export function Home({ onStart, onExplore, onHistory, onMyTemplates, hasActiveSe
         <button className="homebtn" onClick={onHistory}>Past Sessions</button>
         <button className="homebtn" onClick={onMyTemplates}>My Workouts</button>
         <button className="homebtn" onClick={onExplore}>Exercises</button>
+        {isAdmin && <button className="homebtn" style={{borderColor:'var(--acc)',color:'var(--acc)'}} onClick={onAdmin}>⚙ Admin</button>}
       </div>
       {recent.length > 0 && (
         <div className="recent">
@@ -51,5 +52,7 @@ Home.propTypes = {
   onMyTemplates: PropTypes.func.isRequired,
   hasActiveSession: PropTypes.bool.isRequired,
   onResume: PropTypes.func.isRequired,
-  onSettings: PropTypes.func.isRequired
+  onSettings: PropTypes.func.isRequired,
+  isAdmin: PropTypes.bool,
+  onAdmin: PropTypes.func
 };

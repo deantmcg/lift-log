@@ -27,7 +27,7 @@ export function Browser({ allExercises, addedIds, onAdd, onClose, onOpenCustom }
         </div>
         <div className="msearch">
           <span className="searchic">🔍</span>
-          <input className="searchin" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} autoFocus />
+          <input className="searchin" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} />
         </div>
         <div className="frow">
           {cats.map(c=><button key={c} className={`fchip ${cat===c?"on":""}`} onClick={()=>setCat(c)}>{c==="all"?"ALL":c.toUpperCase()}</button>)}

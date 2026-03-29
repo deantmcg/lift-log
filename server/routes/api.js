@@ -4,6 +4,7 @@ const db = require('../db');
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret_dev_key';
+const ADMIN_EMAIL = 'deanmcguigan@hotmail.com';
 
 // --- AUTHENTICATION ---
 router.post('/login', async (req, res) => {
@@ -40,11 +41,17 @@ const authenticate = (req, res, next) => {
 
 router.use(authenticate);
 
+const requireAdmin = async (req, res, next) => {
+  const r = await db.query('SELECT email FROM users WHERE id = $1', [req.userId]);
+  if (!r.rows.length || r.rows[0].email !== ADMIN_EMAIL) return res.status(403).json({ error: 'Admin access required' });
+  next();
+};
+
 // --- SETTINGS ---
 router.get('/settings', async (req, res) => {
   try {
     const r = await db.query('SELECT * FROM get_user_settings($1)', [req.userId]);
-    if (r.rows.length === 0) return res.json({ theme: "green", defaultRest: 120, showTimer: true });
+    if (r.rows.length === 0) return res.json({ theme: "green", defaultRest: 120, showTimer: true, email: null });
     res.json(r.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -133,6 +140,35 @@ router.post('/sessions', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// --- ADMIN ---
+router.post('/admin/exercises', requireAdmin, async (req, res) => {
+  try {
+    const { name, muscleGroup, equipment, category, description } = req.body;
+    const r = await db.query('SELECT create_custom_exercise($1, $2, $3, $4, $5, $6) AS id', [null, name, muscleGroup, equipment, category, description]);
+    await db.query('UPDATE exercises SET user_id = NULL, is_custom = false WHERE id = $1', [r.rows[0].id]);
+    res.json({ success: true, id: r.rows[0].id });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/admin/exercises/:id', requireAdmin, async (req, res) => {
+  try {
+    const { name, muscleGroup, equipment, category, description } = req.body;
+    const mgRes = await db.query('INSERT INTO muscle_groups (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [muscleGroup]);
+    const eqRes = await db.query('INSERT INTO equipment (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [equipment]);
+    const catRes = await db.query('INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [category]);
+    await db.query('UPDATE exercises SET name=$1, muscle_group_id=$2, equipment_id=$3, category_id=$4, description=$5 WHERE id=$6',
+      [name, mgRes.rows[0].id, eqRes.rows[0].id, catRes.rows[0].id, description, req.params.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/admin/exercises/:id', requireAdmin, async (req, res) => {
+  try {
+    await db.query('DELETE FROM exercises WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;

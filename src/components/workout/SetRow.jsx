@@ -10,7 +10,7 @@ export function SetRow({ set, index, editMode, restRem, onUpdate, onRemove, onTo
       <div className="sinputs">
         <NumInput className="sin" value={set.reps} onChange={v => onUpdate(set.id, "reps", v)} />
         <span className="ssep">×</span>
-        <NumInput className="sin w" value={set.weight} step={2.5} onChange={v => onUpdate(set.id, "weight", v)} />
+        <NumInput className="sin w" value={set.weight} step={2.5} onChange={v => onUpdate(set.id, "weight", v)} placeholder="—" />
         <span className="sunit">kg</span>
       </div>
       {!editMode && set.done && (
@@ -29,8 +29,8 @@ export function SetRow({ set, index, editMode, restRem, onUpdate, onRemove, onTo
 SetRow.propTypes = {
   set: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    reps: PropTypes.number.isRequired,
-    weight: PropTypes.number.isRequired,
+    reps: PropTypes.number,
+    weight: PropTypes.number,
     done: PropTypes.bool.isRequired
   }).isRequired,
   index: PropTypes.number.isRequired,

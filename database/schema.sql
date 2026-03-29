@@ -126,12 +126,14 @@ CREATE TABLE session_sets (
 -- ==========================================
 
 -- Settings
+DROP FUNCTION IF EXISTS get_user_settings(INTEGER);
 CREATE OR REPLACE FUNCTION get_user_settings(p_user_id INTEGER)
-RETURNS TABLE (theme VARCHAR, "defaultRest" INTEGER, "showTimer" BOOLEAN) AS $$
+RETURNS TABLE (theme VARCHAR, "defaultRest" INTEGER, "showTimer" BOOLEAN, email VARCHAR) AS $$
 BEGIN
     RETURN QUERY 
-    SELECT s.theme, s.default_rest_seconds AS "defaultRest", s.show_timer AS "showTimer"
+    SELECT s.theme, s.default_rest_seconds AS "defaultRest", s.show_timer AS "showTimer", u.email::VARCHAR
     FROM user_settings s
+    JOIN users u ON u.id = s.user_id
     WHERE s.user_id = p_user_id;
 END;
 $$ LANGUAGE plpgsql;
