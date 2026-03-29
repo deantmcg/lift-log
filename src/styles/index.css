@@ -881,6 +881,7 @@ body::before {
 
 .frow {
   display: flex;
+  flex-shrink: 0;
   gap: 4px;
   padding: 0 12px 5px;
   overflow-x: auto;

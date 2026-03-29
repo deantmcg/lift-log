@@ -13,7 +13,7 @@ export function SetRow({ set, index, editMode, restRem, onUpdate, onRemove, onTo
         <NumInput className="sin w" value={set.weight} step={2.5} onChange={v => onUpdate(set.id, "weight", v)} placeholder="—" />
         <span className="sunit">kg</span>
       </div>
-      {!editMode && set.done && (
+      {!editMode && onStartRest && (
         <button className="restbtn" onClick={onStartRest}>
           {restRem != null && restRem > 0 ? `⏱ ${pad(Math.floor(restRem/60))}:${pad(restRem%60)}` : "⏱ Rest"}
         </button>
