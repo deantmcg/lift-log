@@ -80,6 +80,15 @@ INSERT INTO exercises (id, name, category_id, muscle_group_id, equipment_id, des
 (53, 'Farmer''s Carry', 3, 5, 2, 'Hold heavy dumbbells or handles at your sides and walk for a set distance or time. Builds grip strength, core stability, and full-body conditioning simultaneously.', false)
 ON CONFLICT DO NOTHING;
 
+-- Remove any system exercises no longer in the canonical list above.
+-- Exercises that users have already logged or added to a workout are kept to preserve their history.
+-- Keep this id list in sync with the INSERT statement above.
+DELETE FROM exercises
+WHERE user_id IS NULL
+  AND id NOT IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53)
+  AND NOT EXISTS (SELECT 1 FROM session_exercises WHERE exercise_id = exercises.id)
+  AND NOT EXISTS (SELECT 1 FROM workout_exercises WHERE exercise_id = exercises.id);
+
 -- Resync sequential counters manually so subsequent user inserts don't collide
 SELECT setval('categories_id_seq', (SELECT MAX(id) FROM categories));
 SELECT setval('muscle_groups_id_seq', (SELECT MAX(id) FROM muscle_groups));

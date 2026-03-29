@@ -108,6 +108,9 @@ CREATE TABLE IF NOT EXISTS session_sets (
     order_index INTEGER NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_session_exercises_exercise_id ON session_exercises(exercise_id);
+CREATE INDEX IF NOT EXISTS idx_workout_exercises_exercise_id ON workout_exercises(exercise_id);
+
 -- ==========================================
 -- STORED PROCEDURES & NATIVE API FUNCTIONS
 -- ==========================================
