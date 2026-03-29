@@ -7,7 +7,7 @@ export function MyTemplatesScreen({ allExercises, onBack }) {
   const [templates, setTemplates] = useState([]);
   const [editing, setEditing] = useState(null); // null = list, false = new, obj = edit
 
-  const reload = () => storage.getUserTemplates().then(setTemplates);
+  const reload = () => storage.getUserTemplates().then(all => setTemplates(all.filter(w => w.isCustom)));
   
   useEffect(() => { 
     reload(); 

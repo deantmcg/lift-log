@@ -103,6 +103,10 @@ router.post('/workouts', async (req, res) => {
 
 router.delete('/workouts/:id', async (req, res) => {
   try {
+    const check = await db.query('SELECT is_custom FROM workouts WHERE id = $1', [req.params.id]);
+    if (!check.rows.length || !check.rows[0].is_custom) {
+      return res.status(403).json({ error: 'Cannot delete a system preset workout' });
+    }
     await db.query('CALL delete_workout($1, $2)', [req.userId, req.params.id]);
     res.json({ success: true });
   } catch (err) {
