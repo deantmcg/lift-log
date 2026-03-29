@@ -1,12 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { storage } from '../services/storage';
 import { constants } from '../data/constants';
 import { uid, makeEntry, makeSet, fmtDate } from '../utils/helpers';
 
+const STORAGE_KEY_SESSION = 'll_active_session';
+const STORAGE_KEY_EXERCISES = 'll_active_exercises';
+
 export function useWorkouts(allExercises) {
-  const [session, setSession] = useState(null);
-  const [exercises, setExercises] = useState([]);
-  
+  const [session, setSession] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SESSION);
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      // Only restore active (unfinished) sessions
+      return parsed && !parsed.endTime ? parsed : null;
+    } catch (e) { console.error('Failed to restore session from localStorage', e); return null; }
+  });
+
+  const [exercises, setExercises] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_EXERCISES);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { console.error('Failed to restore exercises from localStorage', e); return []; }
+  });
+
+  // Persist active session to localStorage whenever it changes
+  useEffect(() => {
+    if (session && !session.endTime) {
+      localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
+    } else {
+      localStorage.removeItem(STORAGE_KEY_SESSION);
+    }
+  }, [session]);
+
+  // Persist active exercises to localStorage whenever they change
+  useEffect(() => {
+    if (session && !session.endTime) {
+      localStorage.setItem(STORAGE_KEY_EXERCISES, JSON.stringify(exercises));
+    } else {
+      localStorage.removeItem(STORAGE_KEY_EXERCISES);
+    }
+  }, [exercises, session]);
+
   const startSession = (template) => {
     const now = Date.now();
     const name = template ? template.name + " · " + fmtDate() : "Workout · " + fmtDate();
@@ -54,6 +89,8 @@ export function useWorkouts(allExercises) {
   const finish = async () => {
     const done = { ...session, exercises, endTime:Date.now() };
     setSession(done);
+    localStorage.removeItem(STORAGE_KEY_SESSION);
+    localStorage.removeItem(STORAGE_KEY_EXERCISES);
     await storage.saveSession(done);
     return done;
   };
@@ -61,7 +98,10 @@ export function useWorkouts(allExercises) {
   const cancel = () => {
     setExercises([]);
     setSession(null);
+    localStorage.removeItem(STORAGE_KEY_SESSION);
+    localStorage.removeItem(STORAGE_KEY_EXERCISES);
   };
 
   return { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, moveExercise, finish, cancel };
 }
+

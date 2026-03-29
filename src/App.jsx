@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { storage } from './services/storage';
 import { useTimer } from './hooks/useTimer';
 import { useWorkouts } from './hooks/useWorkouts';
@@ -23,7 +24,9 @@ import './styles/index.css';
 const ADMIN_EMAIL = 'deanmcguigan@hotmail.com';
 
 export default function App() {
-  const [screen, setScreen] = useState("home");
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [showBrowser, setShowBrowser] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
 
@@ -71,7 +74,8 @@ export default function App() {
 
   const { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, moveExercise, finish, cancel } = useWorkouts(allExercises);
 
-  const elapsed = useTimer(session?.startTime, screen === "session" && session);
+  const isSessionRoute = location.pathname === "/session";
+  const elapsed = useTimer(session?.startTime, isSessionRoute && session);
 
   const handleRestButton = (entryId) => {
     if (timerEntryId === entryId && restEndTime && restEndTime > Date.now() && showRest === false) {
@@ -87,16 +91,16 @@ export default function App() {
     }
   };
 
-  const handleStart = (t) => { startSession(t); setScreen("session"); };
+  const handleStart = (t) => { startSession(t); navigate("/session"); };
   const handleFinish = async () => { 
     await finish(); 
     loadInitialData(); 
-    setScreen("summary"); 
+    navigate("/summary"); 
     setRestEndTime(null); 
     setShowRest(false); 
     setTimerEntryId(null); 
   };
-  const handleCancel = () => { cancel(); setScreen("home"); setRestEndTime(null); setShowRest(false); setTimerEntryId(null); };
+  const handleCancel = () => { cancel(); navigate("/"); setRestEndTime(null); setShowRest(false); setTimerEntryId(null); };
 
   const addedIds = new Set(exercises.map(e => e.exerciseId));
   const doneSets = exercises.reduce((a, e) => a + e.sets.filter(s => s.done).length, 0);
@@ -109,74 +113,90 @@ export default function App() {
   return (
     <div className="app">
 
-      {screen === "session" && (
-        <Topbar session={session} elapsed={elapsed} setSession={setSession} onHome={() => setScreen("home")} showTimer={settings.showTimer} />
+      {isSessionRoute && session && (
+        <Topbar session={session} elapsed={elapsed} setSession={setSession} onHome={() => navigate("/")} showTimer={settings.showTimer} />
       )}
 
-      {screen === "home" && (
-        <Home
-          onStart={() => setScreen("templateselect")}
-          onExplore={() => setScreen("explore")}
-          onHistory={() => setScreen("history")}
-          onMyTemplates={() => setScreen("mytemplates")}
-          hasActiveSession={hasActiveSession}
-          onResume={() => setScreen("session")}
-          onSettings={() => setScreen("settings")}
-          isAdmin={isAdmin}
-          onAdmin={() => setScreen("admin")}
-        />
-      )}
+      <Routes>
+        <Route path="/" element={
+          <Home
+            onStart={() => navigate("/workouts/select")}
+            onExplore={() => navigate("/explore")}
+            onHistory={() => navigate("/history")}
+            onMyTemplates={() => navigate("/workouts")}
+            hasActiveSession={hasActiveSession}
+            onResume={() => navigate("/session")}
+            onSettings={() => navigate("/settings")}
+            isAdmin={isAdmin}
+            onAdmin={() => navigate("/admin")}
+          />
+        } />
 
-      {screen === "settings" && (
-        <SettingsScreen
-          settings={settings}
-          setSettings={setSettings}
-          onBack={() => setScreen("home")}
-        />
-      )}
+        <Route path="/settings" element={
+          <SettingsScreen
+            settings={settings}
+            setSettings={setSettings}
+            onBack={() => navigate("/")}
+          />
+        } />
 
-      {screen === "templateselect" && (
-        <TemplateSelectScreen
-          allExercises={allExercises}
-          onStart={handleStart}
-          onBack={() => setScreen("home")}
-        />
-      )}
+        <Route path="/workouts/select" element={
+          <TemplateSelectScreen
+            allExercises={allExercises}
+            onStart={handleStart}
+            onBack={() => navigate("/")}
+          />
+        } />
 
-      {screen === "explore" && <ExploreScreen allExercises={allExercises} onBack={() => setScreen("home")} />}
-      {screen === "history" && <HistoryScreen onBack={() => setScreen("home")} />}
-      {screen === "mytemplates" && <MyTemplatesScreen allExercises={allExercises} onBack={() => setScreen("home")} />}
-      {screen === "summary" && session && <Summary session={session} onNew={() => { setScreen("home"); }} />}
-      {screen === "admin" && <AdminScreen allExercises={allExercises} onBack={() => { setScreen("home"); loadInitialData(); }} />}
+        <Route path="/explore" element={<ExploreScreen allExercises={allExercises} onBack={() => navigate("/")} />} />
+        <Route path="/history" element={<HistoryScreen onBack={() => navigate("/")} />} />
+        <Route path="/workouts" element={<MyTemplatesScreen allExercises={allExercises} onBack={() => navigate("/")} />} />
 
-      {screen === "session" && session && <>
-        <div className="exsec">
-          <div className="secbar">
-            <span className="seclbl">Exercises · {exercises.length}</span>
-            <span className="secstat">{doneSets} sets done</span>
-          </div>
-          {exercises.length === 0 && (
-            <div className="empty"><div className="emico">💪</div><div className="emtxt">Add exercises to begin</div></div>
-          )}
-          {exercises.map((entry, idx) => (
-            <ExerciseCard key={entry.entryId} entry={entry} allExercises={allExercises}
-              onUpdate={updateExercise} onRemove={() => removeExercise(entry.entryId)}
-              addedIds={addedIds}
-              onStartRest={() => handleRestButton(entry.entryId)}
-              restRem={timerEntryId === entry.entryId ? restRem : null}
-              onMoveUp={() => moveExercise(idx, -1)}
-              onMoveDown={() => moveExercise(idx, 1)}
-            />
-          ))}
-        </div>
-        <div className="addwrap">
-          <button className="addexbtn" onClick={() => setShowBrowser(true)}>+ Add Exercise</button>
-        </div>
-        <div className="botbar">
-          <button className="discbtn" onClick={handleCancel}>Cancel</button>
-          <button className="finbtn" onClick={handleFinish} disabled={exercises.length === 0}>Finish Workout</button>
-        </div>
-      </>}
+        <Route path="/summary" element={
+          session
+            ? <Summary session={session} onNew={() => { navigate("/"); }} />
+            : <Navigate to="/" replace />
+        } />
+
+        <Route path="/admin" element={
+          <AdminScreen allExercises={allExercises} onBack={() => { navigate("/"); loadInitialData(); }} />
+        } />
+
+        <Route path="/session" element={
+          session
+            ? <>
+                <div className="exsec">
+                  <div className="secbar">
+                    <span className="seclbl">Exercises · {exercises.length}</span>
+                    <span className="secstat">{doneSets} sets done</span>
+                  </div>
+                  {exercises.length === 0 && (
+                    <div className="empty"><div className="emico">💪</div><div className="emtxt">Add exercises to begin</div></div>
+                  )}
+                  {exercises.map((entry, idx) => (
+                    <ExerciseCard key={entry.entryId} entry={entry} allExercises={allExercises}
+                      onUpdate={updateExercise} onRemove={() => removeExercise(entry.entryId)}
+                      addedIds={addedIds}
+                      onStartRest={() => handleRestButton(entry.entryId)}
+                      restRem={timerEntryId === entry.entryId ? restRem : null}
+                      onMoveUp={() => moveExercise(idx, -1)}
+                      onMoveDown={() => moveExercise(idx, 1)}
+                    />
+                  ))}
+                </div>
+                <div className="addwrap">
+                  <button className="addexbtn" onClick={() => setShowBrowser(true)}>+ Add Exercise</button>
+                </div>
+                <div className="botbar">
+                  <button className="discbtn" onClick={handleCancel}>Cancel</button>
+                  <button className="finbtn" onClick={handleFinish} disabled={exercises.length === 0}>Finish Workout</button>
+                </div>
+              </>
+            : <Navigate to="/" replace />
+        } />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
       {showBrowser && (
         <Browser allExercises={allExercises} addedIds={addedIds}
@@ -207,3 +227,4 @@ export default function App() {
     </div>
   );
 }
+
