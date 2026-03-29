@@ -120,3 +120,254 @@ CREATE TABLE session_sets (
     is_completed BOOLEAN DEFAULT false,
     order_index INTEGER NOT NULL
 );
+
+-- ==========================================
+-- STORED PROCEDURES & NATIVE API FUNCTIONS
+-- ==========================================
+
+-- Settings
+CREATE OR REPLACE FUNCTION get_user_settings(p_user_id INTEGER)
+RETURNS TABLE (theme VARCHAR, "defaultRest" INTEGER, "showTimer" BOOLEAN) AS $$
+BEGIN
+    RETURN QUERY 
+    SELECT s.theme, s.default_rest_seconds AS "defaultRest", s.show_timer AS "showTimer"
+    FROM user_settings s
+    WHERE s.user_id = p_user_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE PROCEDURE upsert_user_settings(p_user_id INTEGER, p_theme VARCHAR, p_default_rest INTEGER, p_show_timer BOOLEAN)
+AS $$
+BEGIN
+    INSERT INTO user_settings (user_id, theme, default_rest_seconds, show_timer)
+    VALUES (p_user_id, p_theme, p_default_rest, p_show_timer)
+    ON CONFLICT (user_id) DO UPDATE SET
+        theme = EXCLUDED.theme,
+        default_rest_seconds = EXCLUDED.default_rest_seconds,
+        show_timer = EXCLUDED.show_timer;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Exercises
+CREATE OR REPLACE FUNCTION get_exercises(p_user_id INTEGER)
+RETURNS TABLE (
+    id INTEGER, 
+    name VARCHAR, 
+    "muscleGroup" VARCHAR, 
+    equipment VARCHAR, 
+    category VARCHAR, 
+    description TEXT, 
+    "isCustom" BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        e.id, 
+        e.name, 
+        mg.name::VARCHAR AS "muscleGroup", 
+        eq.name::VARCHAR AS equipment, 
+        c.name::VARCHAR AS category, 
+        e.description, 
+        e.is_custom AS "isCustom"
+    FROM exercises e
+    LEFT JOIN muscle_groups mg ON e.muscle_group_id = mg.id
+    LEFT JOIN equipment eq ON e.equipment_id = eq.id
+    LEFT JOIN categories c ON e.category_id = c.id
+    WHERE e.user_id IS NULL OR e.user_id = p_user_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION create_custom_exercise(
+    p_user_id INTEGER, 
+    p_name VARCHAR, 
+    p_muscle_group VARCHAR, 
+    p_equipment VARCHAR, 
+    p_category VARCHAR, 
+    p_description TEXT
+) RETURNS INTEGER AS $$
+DECLARE
+    v_mg_id INTEGER;
+    v_eq_id INTEGER;
+    v_cat_id INTEGER;
+    v_ex_id INTEGER;
+BEGIN
+    INSERT INTO muscle_groups (name) VALUES (p_muscle_group) 
+        ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING muscle_groups.id INTO v_mg_id;
+    INSERT INTO equipment (name) VALUES (p_equipment) 
+        ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING equipment.id INTO v_eq_id;
+    INSERT INTO categories (name) VALUES (p_category) 
+        ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING categories.id INTO v_cat_id;
+        
+    INSERT INTO exercises (user_id, name, muscle_group_id, equipment_id, category_id, description, is_custom)
+    VALUES (p_user_id, p_name, v_mg_id, v_eq_id, v_cat_id, p_description, true)
+    RETURNING exercises.id INTO v_ex_id;
+    
+    RETURN v_ex_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Workouts
+CREATE OR REPLACE FUNCTION get_workouts(p_user_id INTEGER)
+RETURNS TABLE (
+    id INTEGER,
+    name VARCHAR,
+    "isCustom" BOOLEAN,
+    exercises JSON
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        w.id, 
+        w.name, 
+        w.is_custom AS "isCustom",
+        COALESCE(
+            json_agg(
+                json_build_object(
+                    'exerciseId', we.exercise_id,
+                    'name', e.name,
+                    'targetSets', we.target_sets,
+                    'targetReps', we.target_reps
+                ) ORDER BY we.order_index ASC
+            ) FILTER (WHERE we.id IS NOT NULL), '[]'::json
+        ) AS exercises
+    FROM workouts w
+    LEFT JOIN workout_exercises we ON we.workout_id = w.id
+    LEFT JOIN exercises e ON e.id = we.exercise_id
+    WHERE w.user_id IS NULL OR w.user_id = p_user_id
+    GROUP BY w.id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION create_workout(p_user_id INTEGER, p_name VARCHAR, p_exercises JSONB)
+RETURNS INTEGER AS $$
+DECLARE
+    v_workout_id INTEGER;
+    v_ex JSONB;
+    v_idx INTEGER := 0;
+BEGIN
+    INSERT INTO workouts (user_id, name, is_custom) 
+    VALUES (p_user_id, p_name, true) 
+    RETURNING workouts.id INTO v_workout_id;
+    
+    FOR v_ex IN SELECT * FROM jsonb_array_elements(p_exercises)
+    LOOP
+        INSERT INTO workout_exercises (workout_id, exercise_id, order_index, target_sets, target_reps)
+        VALUES (
+            v_workout_id, 
+            (v_ex->>'exerciseId')::INTEGER, 
+            v_idx, 
+            COALESCE((v_ex->>'targetSets')::INTEGER, 3), 
+            COALESCE((v_ex->>'targetReps')::INTEGER, 10)
+        );
+        v_idx := v_idx + 1;
+    END LOOP;
+    
+    RETURN v_workout_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE PROCEDURE delete_workout(p_user_id INTEGER, p_workout_id INTEGER)
+AS $$
+BEGIN
+    DELETE FROM workouts WHERE id = p_workout_id AND user_id = p_user_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Sessions
+CREATE OR REPLACE FUNCTION get_sessions(p_user_id INTEGER)
+RETURNS TABLE (
+    id INTEGER,
+    name VARCHAR,
+    "startTime" TIMESTAMP WITH TIME ZONE,
+    "endTime" TIMESTAMP WITH TIME ZONE,
+    "totalVolume" DECIMAL(10,2),
+    exercises JSON
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        s.id,
+        s.name,
+        s.start_time AS "startTime",
+        s.end_time AS "endTime",
+        s.total_volume AS "totalVolume",
+        COALESCE(
+            (
+                SELECT json_agg(
+                    json_build_object(
+                        'exerciseId', se.exercise_id,
+                        'name', e.name,
+                        'sets', COALESCE(
+                            (
+                                SELECT json_agg(
+                                    json_build_object(
+                                        'id', ss.id,
+                                        'reps', ss.reps,
+                                        'weight', ss.weight,
+                                        'done', ss.is_completed
+                                    ) ORDER BY ss.order_index ASC
+                                )
+                                FROM session_sets ss
+                                WHERE ss.session_exercise_id = se.id
+                            ), '[]'::json
+                        )
+                    ) ORDER BY se.order_index ASC
+                )
+                FROM session_exercises se
+                JOIN exercises e ON e.id = se.exercise_id
+                WHERE se.session_id = s.id
+            ), '[]'::json
+        ) AS exercises
+    FROM sessions s
+    WHERE s.user_id = p_user_id
+    ORDER BY s.start_time DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION create_session(
+    p_user_id INTEGER, 
+    p_name VARCHAR, 
+    p_start_time TIMESTAMP WITH TIME ZONE, 
+    p_end_time TIMESTAMP WITH TIME ZONE, 
+    p_total_volume DECIMAL,
+    p_exercises JSONB
+) RETURNS INTEGER AS $$
+DECLARE
+    v_session_id INTEGER;
+    v_se_id INTEGER;
+    v_ex JSONB;
+    v_set JSONB;
+    v_ex_idx INTEGER := 0;
+    v_set_idx INTEGER := 0;
+BEGIN
+    INSERT INTO sessions (user_id, name, start_time, end_time, total_volume)
+    VALUES (p_user_id, p_name, p_start_time, p_end_time, p_total_volume)
+    RETURNING sessions.id INTO v_session_id;
+
+    FOR v_ex IN SELECT * FROM jsonb_array_elements(p_exercises)
+    LOOP
+        INSERT INTO session_exercises (session_id, exercise_id, order_index)
+        VALUES (v_session_id, (v_ex->>'exerciseId')::INTEGER, v_ex_idx)
+        RETURNING session_exercises.id INTO v_se_id;
+        
+        v_set_idx := 0;
+        FOR v_set IN SELECT * FROM jsonb_array_elements(v_ex->'sets')
+        LOOP
+            INSERT INTO session_sets (session_exercise_id, reps, weight, is_completed, order_index)
+            VALUES (
+                v_se_id, 
+                (v_set->>'reps')::INTEGER, 
+                (v_set->>'weight')::DECIMAL, 
+                (v_set->>'done')::BOOLEAN, 
+                v_set_idx
+            );
+            v_set_idx := v_set_idx + 1;
+        END LOOP;
+        
+        v_ex_idx := v_ex_idx + 1;
+    END LOOP;
+    
+    RETURN v_session_id;
+END;
+$$ LANGUAGE plpgsql;

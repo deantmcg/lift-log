@@ -38,7 +38,7 @@ export const storage = {
   getExercises: async () => { const r = await authFetch('/api/exercises'); return r.json(); },
   saveCustomExercise: async (ex) => await authFetch('/api/exercises', { method: 'POST', body: JSON.stringify(ex) }),
   
-  getUserTemplates: async () => { const r = await authFetch('/api/workouts'); const ws = await r.json(); return ws.filter(w => w.isCustom); },
+  getUserTemplates: async () => { const r = await authFetch('/api/workouts'); return r.json(); },
   saveUserTemplate: async (t) => await authFetch('/api/workouts', { method: 'POST', body: JSON.stringify(t) }),
   deleteUserTemplate: async (id) => await authFetch(`/api/workouts/${id}`, { method: 'DELETE' })
 };

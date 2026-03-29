@@ -15,12 +15,8 @@ router.post('/login', async (req, res) => {
     if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
     
     const user = result.rows[0];
-    
     const matchRes = await db.query('SELECT password_hash = crypt($1, password_hash) AS match FROM users WHERE id = $2', [password, user.id]);
-    
-    if (!matchRes.rows[0].match) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
+    if (!matchRes.rows[0].match) return res.status(401).json({ error: 'Invalid credentials' });
     
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1y' });
     res.json({ success: true, token });
@@ -47,251 +43,91 @@ router.use(authenticate);
 // --- SETTINGS ---
 router.get('/settings', async (req, res) => {
   try {
-    const userId = req.userId;
-    const result = await db.query('SELECT theme, default_rest_seconds AS "defaultRest", show_timer AS "showTimer" FROM user_settings WHERE user_id = $1', [userId]);
-    
-    if (result.rows.length === 0) {
-      return res.json({ theme: "green", defaultRest: 120, showTimer: true });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const r = await db.query('SELECT * FROM get_user_settings($1)', [req.userId]);
+    if (r.rows.length === 0) return res.json({ theme: "green", defaultRest: 120, showTimer: true });
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 router.put('/settings', async (req, res) => {
   try {
-    const userId = req.userId;
     const { theme, defaultRest, showTimer } = req.body;
-    await db.query(`
-      INSERT INTO user_settings (user_id, theme, default_rest_seconds, show_timer)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (user_id) DO UPDATE SET
-        theme = EXCLUDED.theme,
-        default_rest_seconds = EXCLUDED.default_rest_seconds,
-        show_timer = EXCLUDED.show_timer
-    `, [userId, theme, defaultRest, showTimer]);
-    
+    await db.query('CALL upsert_user_settings($1, $2, $3, $4)', [req.userId, theme, defaultRest, showTimer]);
     res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 // --- EXERCISES ---
 router.get('/exercises', async (req, res) => {
   try {
-    const userId = req.userId;
-    const result = await db.query(`
-      SELECT e.id, e.name, mg.name AS muscle_group, eq.name AS equipment, c.name AS category, e.description, e.is_custom
-      FROM exercises e
-      LEFT JOIN muscle_groups mg ON e.muscle_group_id = mg.id
-      LEFT JOIN equipment eq ON e.equipment_id = eq.id
-      LEFT JOIN categories c ON e.category_id = c.id
-      WHERE e.user_id IS NULL OR e.user_id = $1
-    `, [userId]);
-    
-    const exercises = result.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      muscleGroup: row.muscle_group,
-      equipment: row.equipment,
-      category: row.category,
-      description: row.description,
-      isCustom: row.is_custom
-    }));
-    
-    res.json(exercises);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const r = await db.query('SELECT * FROM get_exercises($1)', [req.userId]);
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/exercises', async (req, res) => {
   try {
-    const userId = req.userId;
     const { name, muscleGroup, equipment, category, description } = req.body;
-    
-    const mgRes = await db.query('INSERT INTO muscle_groups (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [muscleGroup]);
-    const eqRes = await db.query('INSERT INTO equipment (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [equipment]);
-    const catRes = await db.query('INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [category]);
-    
-    const mgId = mgRes.rows[0].id;
-    const eqId = eqRes.rows[0].id;
-    const catId = catRes.rows[0].id;
-    
-    const exRes = await db.query(`
-      INSERT INTO exercises (user_id, name, muscle_group_id, equipment_id, category_id, description, is_custom)
-      VALUES ($1, $2, $3, $4, $5, $6, true)
-      RETURNING id
-    `, [userId, name, mgId, eqId, catId, description]);
-    
-    res.json({ success: true, id: exRes.rows[0].id });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const r = await db.query('SELECT create_custom_exercise($1, $2, $3, $4, $5, $6) AS id', [req.userId, name, muscleGroup, equipment, category, description]);
+    res.json({ success: true, id: r.rows[0].id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 // --- WORKOUTS ---
 router.get('/workouts', async (req, res) => {
   try {
-    const userId = req.userId;
-    const workoutsRes = await db.query('SELECT * FROM workouts WHERE user_id IS NULL OR user_id = $1', [userId]);
-    
-    const workouts = [];
-    for (let w of workoutsRes.rows) {
-      const exRes = await db.query(`
-        SELECT we.*, e.name, mg.name AS muscle_group, eq.name AS equipment 
-        FROM workout_exercises we
-        JOIN exercises e ON e.id = we.exercise_id
-        LEFT JOIN muscle_groups mg ON e.muscle_group_id = mg.id
-        LEFT JOIN equipment eq ON e.equipment_id = eq.id
-        WHERE we.workout_id = $1
-        ORDER BY we.order_index ASC
-      `, [w.id]);
-      
-      workouts.push({
-        id: w.id,
-        name: w.name,
-        isCustom: w.is_custom,
-        exercises: exRes.rows.map(we => ({
-          exerciseId: we.exercise_id,
-          name: we.name,
-          targetSets: we.target_sets,
-          targetReps: we.target_reps
-        }))
-      });
-    }
-    
-    res.json(workouts);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const r = await db.query('SELECT * FROM get_workouts($1)', [req.userId]);
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/workouts', async (req, res) => {
   try {
-    const userId = req.userId;
     const { name, exercises } = req.body;
-    
-    await db.query('BEGIN');
-    
-    const wRes = await db.query(
-      'INSERT INTO workouts (user_id, name, is_custom) VALUES ($1, $2, true) RETURNING id',
-      [userId, name]
-    );
-    const workoutId = wRes.rows[0].id;
-    
-    let orderIndex = 0;
-    for (const ex of exercises) {
-      await db.query(`
-        INSERT INTO workout_exercises (workout_id, exercise_id, order_index, target_sets, target_reps)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [workoutId, ex.exerciseId, orderIndex++, ex.targetSets || 3, ex.targetReps || 10]);
-    }
-    
-    await db.query('COMMIT');
-    res.json({ success: true, id: workoutId });
-  } catch (error) {
-    await db.query('ROLLBACK');
-    res.status(500).json({ error: error.message });
+    const r = await db.query('SELECT create_workout($1, $2, $3::jsonb) AS id', [req.userId, name, JSON.stringify(exercises)]);
+    res.json({ success: true, id: r.rows[0].id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 router.delete('/workouts/:id', async (req, res) => {
   try {
-    const userId = req.userId;
-    await db.query('DELETE FROM workouts WHERE id = $1 AND user_id = $2', [req.params.id, userId]);
+    await db.query('CALL delete_workout($1, $2)', [req.userId, req.params.id]);
     res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 // --- SESSIONS ---
 router.get('/sessions', async (req, res) => {
   try {
-    const userId = req.userId;
-    const sessionsRes = await db.query('SELECT * FROM sessions WHERE user_id = $1 ORDER BY start_time DESC', [userId]);
-    
-    const sessions = [];
-    for (let s of sessionsRes.rows) {
-      const seRes = await db.query(`
-        SELECT se.*, e.name, mg.name AS muscle_group 
-        FROM session_exercises se
-        JOIN exercises e ON e.id = se.exercise_id
-        LEFT JOIN muscle_groups mg ON e.muscle_group_id = mg.id
-        WHERE se.session_id = $1
-        ORDER BY se.order_index ASC
-      `, [s.id]);
-      
-      const sessionExercises = [];
-      for (let se of seRes.rows) {
-        const setsRes = await db.query('SELECT * FROM session_sets WHERE session_exercise_id = $1 ORDER BY order_index ASC', [se.id]);
-        sessionExercises.push({
-          exerciseId: se.exercise_id,
-          name: se.name,
-          sets: setsRes.rows.map(set => ({
-            id: set.id,
-            reps: set.reps,
-            weight: set.weight,
-            done: set.is_completed
-          }))
-        });
-      }
-      
-      sessions.push({
-        id: s.id,
-        name: s.name,
-        startTime: s.start_time,
-        endTime: s.end_time,
-        totalVolume: s.total_volume,
-        exercises: sessionExercises
-      });
-    }
-    
-    res.json(sessions);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const r = await db.query('SELECT * FROM get_sessions($1)', [req.userId]);
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/sessions', async (req, res) => {
   try {
-    const userId = req.userId;
     const { name, startTime, endTime, totalVolume, exercises } = req.body;
-    
-    await db.query('BEGIN');
-    
-    const sRes = await db.query(`
-      INSERT INTO sessions (user_id, name, start_time, end_time, total_volume)
-      VALUES ($1, $2, $3, $4, $5) RETURNING id
-    `, [userId, name, new Date(startTime), new Date(endTime), totalVolume]);
-    
-    const sessionId = sRes.rows[0].id;
-    
-    for (let i = 0; i < exercises.length; i++) {
-      const ex = exercises[i];
-      const seRes = await db.query(`
-        INSERT INTO session_exercises (session_id, exercise_id, order_index)
-        VALUES ($1, $2, $3) RETURNING id
-      `, [sessionId, ex.exerciseId, i]);
-      const seId = seRes.rows[0].id;
-      
-      for (let j = 0; j < ex.sets.length; j++) {
-        const set = ex.sets[j];
-        await db.query(`
-          INSERT INTO session_sets (session_exercise_id, reps, weight, is_completed, order_index)
-          VALUES ($1, $2, $3, $4, $5)
-        `, [seId, set.reps, set.weight, set.done, j]);
-      }
-    }
-    
-    await db.query('COMMIT');
-    res.json({ success: true, id: sessionId });
-  } catch (error) {
-    await db.query('ROLLBACK');
-    res.status(500).json({ error: error.message });
+    const r = await db.query('SELECT create_session($1, $2, $3, $4, $5, $6::jsonb) AS id',
+      [req.userId, name, new Date(startTime), new Date(endTime), totalVolume, JSON.stringify(exercises)]);
+    res.json({ success: true, id: r.rows[0].id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

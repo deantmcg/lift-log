@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { storage } from '../../services/storage';
-import { TEMPLATES } from '../../data/templates';
 
 export function TemplateSelectScreen({ allExercises, onStart, onBack }) {
-  const [userTemplates, setUserTemplates] = useState([]);
-  useEffect(() => { storage.getUserTemplates().then(setUserTemplates); }, []);
+  const [systemWorkouts, setSystemWorkouts] = useState([]);
+  const [userWorkouts, setUserWorkouts] = useState([]);
+  useEffect(() => {
+    storage.getUserTemplates().then(all => {
+      setSystemWorkouts(all.filter(w => !w.isCustom));
+      setUserWorkouts(all.filter(w => w.isCustom));
+    });
+  }, []);
   const exMap = new Map(allExercises.map(e => [e.id, e]));
 
   return (
@@ -24,10 +29,10 @@ export function TemplateSelectScreen({ allExercises, onStart, onBack }) {
           <div className="tmpl-arr">+</div>
         </div>
         
-        {userTemplates.length > 0 && (
+        {userWorkouts.length > 0 && (
           <>
             <div className="grplbl" style={{marginTop:10}}>Your workouts</div>
-            {userTemplates.map(t=>{
+            {userWorkouts.map(t=>{
               const names = t.exercises.map(te=>exMap.get(te.exerciseId)?.name).filter(Boolean);
               return (
                 <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
@@ -43,7 +48,7 @@ export function TemplateSelectScreen({ allExercises, onStart, onBack }) {
         )}
         
         <div className="grplbl" style={{marginTop:10}}>Preset workouts</div>
-        {TEMPLATES.map(t=>{
+        {systemWorkouts.map(t=>{
           const names = t.exercises.map(te=>exMap.get(te.exerciseId)?.name).filter(Boolean);
           return (
             <div key={t.id} className="tmpl-item" onClick={()=>onStart(t)}>
