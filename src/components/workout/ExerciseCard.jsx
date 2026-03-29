@@ -26,6 +26,7 @@ export function ExerciseCard({ entry, allExercises, onUpdate, onRemove, addedIds
     !addedIds.has(ex.id)
   );
   const doSwap = (ex) => { if (editMode) return; onUpdate({ ...makeEntry(ex), entryId: entry.entryId, expanded: true }); };
+  const lastDoneIdx = entry.sets.reduce((last, s, i) => s.done ? i : last, -1);
 
   return (
     <div className={`excard ${entry.expanded?"open":""}`}>
@@ -72,19 +73,22 @@ export function ExerciseCard({ entry, allExercises, onUpdate, onRemove, addedIds
         </div>
 
         <div className="slist">
-          {entry.sets.map((set,i) => (
-            <SetRow 
-              key={set.id}
-              set={set}
-              index={i}
-              editMode={editMode}
-              restRem={restRem}
-              onUpdate={upd}
-              onRemove={rmSet}
-              onToggleDone={tick}
-              onStartRest={onStartRest}
-            />
-          ))}
+          {entry.sets.map((set,i) => {
+            const isLastDone = i === lastDoneIdx;
+            return (
+              <SetRow 
+                key={set.id}
+                set={set}
+                index={i}
+                editMode={editMode}
+                restRem={isLastDone ? restRem : null}
+                onUpdate={upd}
+                onRemove={rmSet}
+                onToggleDone={tick}
+                onStartRest={isLastDone ? onStartRest : undefined}
+              />
+            );
+          })}
           <button className="addbtn" onClick={addSet}>+ Add Set</button>
         </div>
       </>}
