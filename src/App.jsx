@@ -120,10 +120,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={
           <Home
-            onStart={() => navigate("/templates/select")}
+            onStart={() => navigate("/workouts/select")}
             onExplore={() => navigate("/explore")}
             onHistory={() => navigate("/history")}
-            onMyTemplates={() => navigate("/templates")}
+            onMyTemplates={() => navigate("/workouts")}
             hasActiveSession={hasActiveSession}
             onResume={() => navigate("/session")}
             onSettings={() => navigate("/settings")}
@@ -140,7 +140,7 @@ export default function App() {
           />
         } />
 
-        <Route path="/templates/select" element={
+        <Route path="/workouts/select" element={
           <TemplateSelectScreen
             allExercises={allExercises}
             onStart={handleStart}
@@ -150,7 +150,7 @@ export default function App() {
 
         <Route path="/explore" element={<ExploreScreen allExercises={allExercises} onBack={() => navigate("/")} />} />
         <Route path="/history" element={<HistoryScreen onBack={() => navigate("/")} />} />
-        <Route path="/templates" element={<MyTemplatesScreen allExercises={allExercises} onBack={() => navigate("/")} />} />
+        <Route path="/workouts" element={<MyTemplatesScreen allExercises={allExercises} onBack={() => navigate("/")} />} />
 
         <Route path="/summary" element={
           session
