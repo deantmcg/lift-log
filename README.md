@@ -66,3 +66,11 @@ sudo systemctl restart caddy
 ```
 
 **Security is complete!** You can now safely point the `VITE_API_URL` environment variable inside Vercel to `https://liftlog.duckdns.org`.
+
+## 5. Deploying Future Updates
+Whenever you push new backend code to GitHub, SSH into your Hetzner server and run the following to pull the updates and restart the Node cache (without touching Caddy):
+```bash
+cd liftlog-backend
+git pull origin main
+pm2 restart liftlog-api
+```
