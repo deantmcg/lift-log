@@ -2,14 +2,23 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { storage } from '../../services/storage';
 import { NumInput } from '../common/NumInput';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
+import { updateManifestTheme } from '../../utils/updateManifest';
 
 export function SettingsScreen({ settings, setSettings, onBack }) {
+  const { installPrompt, isInstalled, prompt } = useInstallPrompt();
+
+  // Detect iOS Safari (no beforeinstallprompt support)
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const showIosTutorial = isIos && !isInstalled;
+
   const updateSetting = async (key, val) => {
     const next = { ...settings, [key]: val };
     setSettings(next);
     await storage.saveSettings(next);
     if (key === 'theme') {
       document.documentElement.setAttribute('data-theme', val);
+      updateManifestTheme(val);
     }
   };
 
@@ -91,6 +100,59 @@ export function SettingsScreen({ settings, setSettings, onBack }) {
             }} />
           </button>
         </div>
+
+        <div className="seclbl" style={{marginBottom: 8, marginTop: 32}}>Install App</div>
+
+        {isInstalled ? (
+          <div className="xitem" style={{padding: '14px', cursor: 'default', gap: 10}}>
+            <span style={{fontSize: 18}}>✅</span>
+            <div>
+              <div style={{fontSize: 14, fontWeight: 700}}>App Installed</div>
+              <div style={{fontSize: 11, color: 'var(--muted)', marginTop: 2}}>Lift Log is running as an installed app.</div>
+            </div>
+          </div>
+        ) : installPrompt ? (
+          <div>
+            <div className="xitem" style={{padding: '12px', cursor: 'default', marginBottom: 8}}>
+              <div style={{flex: 1, paddingRight: 10}}>
+                <div style={{fontSize: 14, fontWeight: 700}}>Add to Home Screen</div>
+                <div style={{fontSize: 11, color: 'var(--muted)', marginTop: 2, lineHeight: 1.3}}>
+                  Install Lift Log for a full-screen, app-like experience.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={prompt}
+              style={{
+                width: '100%', padding: '14px',
+                background: 'var(--accent)', color: '#000',
+                border: 'none', borderRadius: 'var(--r)',
+                fontWeight: 700, fontSize: 14, cursor: 'pointer'
+              }}
+            >
+              Install App
+            </button>
+          </div>
+        ) : showIosTutorial ? (
+          <div className="xitem" style={{padding: '14px', cursor: 'default', flexDirection: 'column', alignItems: 'flex-start', gap: 10}}>
+            <div style={{fontSize: 14, fontWeight: 700}}>Add to Home Screen (iOS)</div>
+            <div style={{fontSize: 12, color: 'var(--muted)', lineHeight: 1.5}}>
+              To install Lift Log on your iPhone or iPad:
+            </div>
+            <ol style={{margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--text)', lineHeight: 2}}>
+              <li>Tap the <strong>Share</strong> button <span style={{fontSize: 14}}>⬆</span> at the bottom of Safari</li>
+              <li>Scroll down and tap <strong>&quot;Add to Home Screen&quot;</strong></li>
+              <li>Tap <strong>&quot;Add&quot;</strong> to confirm</li>
+            </ol>
+          </div>
+        ) : (
+          <div className="xitem" style={{padding: '14px', cursor: 'default', flexDirection: 'column', alignItems: 'flex-start', gap: 8}}>
+            <div style={{fontSize: 14, fontWeight: 700}}>Add to Home Screen</div>
+            <div style={{fontSize: 12, color: 'var(--muted)', lineHeight: 1.5}}>
+              To install Lift Log, open this page in your browser and look for the <strong>Add to Home Screen</strong> or <strong>Install App</strong> option in the browser menu.
+            </div>
+          </div>
+        )}
 
         <div className="seclbl" style={{marginBottom: 8, marginTop: 32}}>Account</div>
         <button 

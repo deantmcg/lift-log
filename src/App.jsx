@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import { storage } from './services/storage';
 import { useTimer } from './hooks/useTimer';
 import { useWorkouts } from './hooks/useWorkouts';
+import { updateManifestTheme } from './utils/updateManifest';
 
 import { Topbar } from './components/common/Topbar';
 import { Home } from './components/home/Home';
@@ -47,6 +48,7 @@ export default function App() {
       setAllExercises(exes);
       setRestTotal(sets.defaultRest);
       document.documentElement.setAttribute('data-theme', sets.theme);
+      updateManifestTheme(sets.theme);
       setLoading(false);
     }).catch(e => console.error(e));
   };
