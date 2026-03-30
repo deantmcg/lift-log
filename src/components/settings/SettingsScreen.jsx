@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { storage } from '../../services/storage';
 import { NumInput } from '../common/NumInput';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
+import { updateManifestTheme } from '../../utils/updateManifest';
 
 export function SettingsScreen({ settings, setSettings, onBack }) {
   const { installPrompt, isInstalled, prompt } = useInstallPrompt();
@@ -17,6 +18,7 @@ export function SettingsScreen({ settings, setSettings, onBack }) {
     await storage.saveSettings(next);
     if (key === 'theme') {
       document.documentElement.setAttribute('data-theme', val);
+      updateManifestTheme(val);
     }
   };
 
