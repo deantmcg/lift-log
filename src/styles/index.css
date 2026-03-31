@@ -8,6 +8,12 @@
   padding: 0;
 }
 
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 :root {
   --bg: #050805;
   --surface: #090e09;
@@ -123,7 +129,7 @@ body::before {
   border: none;
   outline: none;
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--dim);
   letter-spacing: 2px;
@@ -859,7 +865,7 @@ body::before {
   border-radius: var(--r);
   color: var(--text);
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   padding: 6px 10px 6px 28px;
   outline: none;
@@ -1028,7 +1034,7 @@ body::before {
   border-radius: var(--r);
   color: var(--text);
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   padding: 7px 9px;
   outline: none;
