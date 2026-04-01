@@ -3,7 +3,19 @@
 This documentation exclusively covers how the backend Express API is deployed to a Hetzner Cloud Ubuntu VPS so that it can securely receive requests from the Vercel-hosted frontend.
 
 ## 1. Initial Server Setup
-SSH into your Hetzner server as `root`. Clone the repository and install the Node.js production dependencies:
+SSH into your Hetzner server as `root`. 
+
+### 1a. Security First (Firewall)
+Before doing anything else, enable the local firewall to prevent your database from being exposed to the internet:
+```bash
+sudo ufw allow ssh     # ESSENTIAL: Do not skip this!
+sudo ufw allow 80/tcp  # For HTTP
+sudo ufw allow 443/tcp # For HTTPS
+sudo ufw enable         # Turn on the firewall
+```
+
+### 1b. Clone and Install
+Clone the repository and install the Node.js production dependencies:
 ```bash
 git clone https://github.com/your-repo/lift-log.git liftlog-backend
 cd liftlog-backend
