@@ -642,9 +642,66 @@ body::before {
   margin-top: 2px;
 }
 
+.addbtn.flex1 {
+  width: auto;
+  flex: 1;
+  margin-top: 0;
+}
+
 .addbtn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* ── NOTES BUTTON + AREA ── */
+.slist-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.notesbtn {
+  background: none;
+  border: 1px dashed var(--border2);
+  border-radius: var(--rsm);
+  color: var(--muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+.notesbtn:hover,
+.notesbtn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.notes-area {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--rsm);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px;
+  resize: vertical;
+  min-height: 60px;
+  margin-top: 6px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.notes-area:focus {
+  border-color: var(--accent);
 }
 
 /* ── SWAP PANEL ── */
