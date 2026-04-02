@@ -96,7 +96,8 @@ CREATE TABLE IF NOT EXISTS session_exercises (
     id SERIAL PRIMARY KEY,
     session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,
     exercise_id INTEGER REFERENCES exercises(id) ON DELETE CASCADE,
-    order_index INTEGER NOT NULL
+    order_index INTEGER NOT NULL,
+    notes TEXT
 );
 
 CREATE TABLE IF NOT EXISTS session_sets (
@@ -333,6 +334,7 @@ BEGIN
                     json_build_object(
                         'exerciseId', se.exercise_id,
                         'name', e.name,
+                        'notes', se.notes,
                         'sets', COALESCE(
                             (
                                 SELECT json_agg(
@@ -383,8 +385,8 @@ BEGIN
 
     FOR v_ex IN SELECT * FROM jsonb_array_elements(p_exercises)
     LOOP
-        INSERT INTO session_exercises (session_id, exercise_id, order_index)
-        VALUES (v_session_id, (v_ex->>'exerciseId')::INTEGER, v_ex_idx)
+        INSERT INTO session_exercises (session_id, exercise_id, order_index, notes)
+        VALUES (v_session_id, (v_ex->>'exerciseId')::INTEGER, v_ex_idx, v_ex->>'notes')
         RETURNING session_exercises.id INTO v_se_id;
         
         v_set_idx := 0;
