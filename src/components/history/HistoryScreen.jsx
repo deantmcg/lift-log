@@ -10,6 +10,7 @@ import { CustomModal } from '../workout/CustomModal';
 function SessionEditScreen({ origSession, onSave, onCancel }) {
   const [session, setSession] = useState(() => ({ ...origSession }));
   const [exercises, setExercises] = useState(() => origSession.exercises.map(e => ({ ...e, sets: e.sets.map(s => ({...s})) })));
+  const [saving, setSaving] = useState(false);
   
   const toDTL = (date) => {
     if (!date) return "";
@@ -36,16 +37,22 @@ function SessionEditScreen({ origSession, onSave, onCancel }) {
         <button className="backbtn" onClick={onCancel}>Cancel</button>
         <input className="sname-input" value={session.name} placeholder="Session name..."
           onChange={e=>setSession(s=>({...s,name:e.target.value}))} style={{flex:1,marginLeft:8}} />
-        <button className="hist-save-btn" onClick={async ()=>{
-          const updated = { 
-            ...session, 
-            exercises, 
-            startTime: new Date(startTime).getTime(),
-            endTime: new Date(endTime).getTime()
-          };
-          await storage.saveSession(updated);
-          onSave(updated);
-        }}>Save</button>
+        <button className="hist-save-btn" disabled={saving} onClick={async ()=>{
+          if (saving) return;
+          setSaving(true);
+          try {
+            const updated = { 
+              ...session, 
+              exercises, 
+              startTime: new Date(startTime).getTime(),
+              endTime: new Date(endTime).getTime()
+            };
+            await storage.saveSession(updated);
+            onSave(updated);
+          } finally {
+            setSaving(false);
+          }
+        }}>{saving ? 'Saving…' : 'Save'}</button>
       </div>
       <div className="xscroll">
         <div style={{padding: "0 12px", marginBottom: 12}}>
@@ -110,6 +117,7 @@ function HistoryDetail({ session, onBack }) {
   const endTs     = new Date(session.endTime).getTime();
   const dur       = (startTs && endTs) ? endTs - startTs : 0;
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   
   if (editing) {
     return (
@@ -153,15 +161,20 @@ function HistoryDetail({ session, onBack }) {
         </div>
         <div style={{padding: "16px 12px"}}>
           <button className="discbtn" style={{width:"100%", background:"#221111", color:"#ff4444", borderColor:"#442222"}} 
+            disabled={deleting}
             onClick={async ()=>{
+              if (deleting) return;
               if (!confirm("Delete this session forever?")) return;
+              setDeleting(true);
               try {
                 await storage.deleteSession(session.id);
                 onBack(null); // signal deletion
               } catch (err) {
                 alert(`Failed to delete session: ${err.message}`);
+              } finally {
+                setDeleting(false);
               }
-            }}>Delete Session</button>
+            }}>{deleting ? 'Deleting…' : 'Delete Session'}</button>
         </div>
       </div>
     </div>
