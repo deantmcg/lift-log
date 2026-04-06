@@ -154,7 +154,7 @@ router.post('/sessions', async (req, res) => {
 
 router.delete('/sessions/:id', async (req, res) => {
   try {
-    await db.query('CALL delete_session($1, $2)', [req.userId, req.params.id]);
+    await db.query('CALL delete_session($1, $2)', [req.userId, Number(req.params.id)]);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

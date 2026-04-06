@@ -180,7 +180,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE PROCEDURE delete_session(p_user_id INTEGER, p_session_id VARCHAR)
+CREATE OR REPLACE PROCEDURE delete_session(p_user_id INTEGER, p_session_id INTEGER)
 AS $$
 BEGIN
     DELETE FROM sessions WHERE id = p_session_id AND user_id = p_user_id;

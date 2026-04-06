@@ -155,8 +155,12 @@ function HistoryDetail({ session, onBack }) {
           <button className="discbtn" style={{width:"100%", background:"#221111", color:"#ff4444", borderColor:"#442222"}} 
             onClick={async ()=>{
               if (!confirm("Delete this session forever?")) return;
-              await storage.deleteSession(session.id);
-              onBack(null); // signal deletion
+              try {
+                await storage.deleteSession(session.id);
+                onBack(null); // signal deletion
+              } catch (err) {
+                alert(`Failed to delete session: ${err.message}`);
+              }
             }}>Delete Session</button>
         </div>
       </div>

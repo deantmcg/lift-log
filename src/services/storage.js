@@ -47,7 +47,11 @@ export const storage = {
   },
   deleteUserTemplate: async (id) => await authFetch(`/api/workouts/${id}`, { method: 'DELETE' }),
 
-  deleteSession: async (id) => await authFetch(`/api/sessions/${id}`, { method: 'DELETE' }),
+  deleteSession: async (id) => {
+    const r = await authFetch(`/api/sessions/${id}`, { method: 'DELETE' });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.error || 'Delete failed'); }
+    return r.json();
+  },
 
   adminUpdateExercise: async (id, data) => { const r = await authFetch(`/api/admin/exercises/${id}`, { method: 'PUT', body: JSON.stringify(data) }); if (!r.ok) { const e = await r.json(); throw new Error(e.error); } return r.json(); },
   adminCreateExercise: async (data) => { const r = await authFetch('/api/admin/exercises', { method: 'POST', body: JSON.stringify(data) }); if (!r.ok) { const e = await r.json(); throw new Error(e.error); } return r.json(); },
