@@ -24,5 +24,6 @@ export const makeEntry = (ex) => {
     sets: Array.from({ length: constants.DEFAULT_TARGET_SETS }, () => makeSet(constants.DEFAULT_TARGET_REPS, weight)),
     expanded: true,
     showSwap: false,
+    notes: "",
   };
 };

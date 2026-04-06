@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { NumInput } from '../common/NumInput';
 import { SetRow } from './SetRow';
@@ -8,6 +8,13 @@ import { makeEntry, makeSet } from '../../utils/helpers';
 export function ExerciseCard({ entry, allExercises, onUpdate, onRemove, addedIds, onStartRest, restRem, editMode, onMoveUp, onMoveDown }) {
   const mc = constants.MUSCLE_COLORS[entry.muscleGroup] || { bg:"#111", border:"#333", text:"#888" };
   const doneCt = entry.sets.filter(s => s.done).length;
+  const [showNotes, setShowNotes] = useState(() => !!(entry.notes && entry.notes.trim()));
+
+  // Re-sync showNotes when the exercise is swapped (entryId stays same but notes resets)
+  useEffect(() => {
+    setShowNotes(!!(entry.notes && entry.notes.trim()));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry.entryId]);
 
   const upd = (id, field, val) => onUpdate({ ...entry, sets: entry.sets.map(s => s.id===id ? {...s,[field]:val} : s) });
   const tick = (id) => {
@@ -89,7 +96,21 @@ export function ExerciseCard({ entry, allExercises, onUpdate, onRemove, addedIds
               />
             );
           })}
-          <button className="addbtn" onClick={addSet}>+ Add Set</button>
+          {showNotes && (
+            <textarea
+              className="notes-area"
+              placeholder="Add notes for this exercise..."
+              value={entry.notes || ""}
+              onChange={e => onUpdate({...entry, notes: e.target.value})}
+              onClick={e => e.stopPropagation()}
+            />
+          )}
+          <div className="slist-btns">
+            <button className={`notesbtn${showNotes ? " active" : ""}`} onClick={e => { e.stopPropagation(); setShowNotes(n => !n); }}>
+              📝 Notes
+            </button>
+            <button className="addbtn flex1" onClick={addSet}>+ Add Set</button>
+          </div>
         </div>
       </>}
     </div>
