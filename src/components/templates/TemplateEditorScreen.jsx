@@ -18,6 +18,7 @@ export function TemplateEditorScreen({ allExercises, template, onSave, onBack })
     }))
   );
   const [showPicker, setShowPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const addExercise = (ex) => {
     const weight = ex.lastWeight !== undefined && ex.lastWeight !== null ? Number(ex.lastWeight) : constants.DEFAULT_TARGET_WEIGHT;
@@ -42,14 +43,19 @@ export function TemplateEditorScreen({ allExercises, template, onSave, onBack })
   });
 
   const save = async () => {
-    if (!name.trim() || entries.length === 0) return;
-    const t = {
-      id: template?.id,
-      name: name.trim(),
-      exercises: entries.map(({ exerciseId, targetSets, targetReps, targetWeight }) => ({ exerciseId, targetSets, targetReps, targetWeight })),
-    };
-    await storage.saveUserTemplate(t);
-    onSave();
+    if (saving || !name.trim() || entries.length === 0) return;
+    setSaving(true);
+    try {
+      const t = {
+        id: template?.id,
+        name: name.trim(),
+        exercises: entries.map(({ exerciseId, targetSets, targetReps, targetWeight }) => ({ exerciseId, targetSets, targetReps, targetWeight })),
+      };
+      await storage.saveUserTemplate(t);
+      onSave();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addedIds = new Set(entries.map(e => e.exerciseId));
@@ -97,8 +103,8 @@ export function TemplateEditorScreen({ allExercises, template, onSave, onBack })
 
         <button className="addexbtn" style={{marginTop:4}} onClick={()=>setShowPicker(true)}>+ Add Exercise</button>
 
-        <button className="new-tmpl-btn" onClick={save} disabled={!name.trim() || entries.length === 0}>
-          {isNew ? "Create Template" : "Save Changes"}
+        <button className="new-tmpl-btn" onClick={save} disabled={!name.trim() || entries.length === 0 || saving}>
+          {saving ? 'Saving…' : isNew ? "Create Template" : "Save Changes"}
         </button>
       </div>
 

@@ -17,6 +17,8 @@ export function useWorkouts(allExercises) {
     } catch (e) { console.error('Failed to restore session from localStorage', e); return null; }
   });
 
+  const [saving, setSaving] = useState(false);
+
   const [exercises, setExercises] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_EXERCISES);
@@ -87,12 +89,18 @@ export function useWorkouts(allExercises) {
   });
 
   const finish = async () => {
-    const done = { ...session, exercises, endTime:Date.now() };
-    setSession(done);
-    localStorage.removeItem(STORAGE_KEY_SESSION);
-    localStorage.removeItem(STORAGE_KEY_EXERCISES);
-    await storage.saveSession(done);
-    return done;
+    if (saving) return;
+    setSaving(true);
+    try {
+      const done = { ...session, exercises, endTime:Date.now() };
+      setSession(done);
+      localStorage.removeItem(STORAGE_KEY_SESSION);
+      localStorage.removeItem(STORAGE_KEY_EXERCISES);
+      await storage.saveSession(done);
+      return done;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const cancel = () => {
@@ -102,6 +110,6 @@ export function useWorkouts(allExercises) {
     localStorage.removeItem(STORAGE_KEY_EXERCISES);
   };
 
-  return { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, moveExercise, finish, cancel };
+  return { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, moveExercise, finish, saving, cancel };
 }
 

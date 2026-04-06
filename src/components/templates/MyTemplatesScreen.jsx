@@ -6,6 +6,7 @@ import { TemplateEditorScreen } from './TemplateEditorScreen';
 export function MyTemplatesScreen({ allExercises, onBack }) {
   const [templates, setTemplates] = useState([]);
   const [editing, setEditing] = useState(null); // null = list, false = new, obj = edit
+  const [deletingId, setDeletingId] = useState(null);
 
   const reload = () => storage.getUserTemplates().then(all => setTemplates(all.filter(w => w.isCustom)));
   
@@ -53,7 +54,16 @@ export function MyTemplatesScreen({ allExercises, onBack }) {
                     </div>
                     <div className="tmpl-edit-btns">
                       <button className="tmpl-edit-btn" onClick={()=>setEditing(t)}>Edit</button>
-                      <button className="tmpl-edit-btn del" onClick={async ()=>{ await storage.deleteUserTemplate(t.id); reload(); }}>Delete</button>
+                      <button className="tmpl-edit-btn del" disabled={deletingId === t.id} onClick={async ()=>{
+                        if (deletingId) return;
+                        setDeletingId(t.id);
+                        try {
+                          await storage.deleteUserTemplate(t.id);
+                          reload();
+                        } finally {
+                          setDeletingId(null);
+                        }
+                      }}>{deletingId === t.id ? '…' : 'Delete'}</button>
                     </div>
                   </div>
                 );

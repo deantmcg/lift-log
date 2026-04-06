@@ -74,7 +74,7 @@ export default function App() {
 
   const [allExercises, setAllExercises] = useState([]);
 
-  const { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, moveExercise, finish, cancel } = useWorkouts(allExercises);
+  const { session, setSession, exercises, startSession, addExercise, updateExercise, removeExercise, moveExercise, finish, saving, cancel } = useWorkouts(allExercises);
 
   const isSessionRoute = location.pathname === "/session";
   const elapsed = useTimer(session?.startTime, isSessionRoute && session);
@@ -191,7 +191,9 @@ export default function App() {
                 </div>
                 <div className="botbar">
                   <button className="discbtn" onClick={handleCancel}>Cancel</button>
-                  <button className="finbtn" onClick={handleFinish} disabled={exercises.length === 0}>Finish Workout</button>
+                  <button className="finbtn" onClick={handleFinish} disabled={exercises.length === 0 || saving}>
+                    {saving ? 'Saving…' : 'Finish Workout'}
+                  </button>
                 </div>
               </>
             : <Navigate to="/" replace />

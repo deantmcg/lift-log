@@ -9,16 +9,22 @@ export function CustomModal({ onSave, onClose }) {
   const [category, setCategory]   = useState("push");
   const [muscleGroup, setMG]      = useState("chest");
   const [equipment, setEquip]     = useState("barbell");
+  const [saving, setSaving]       = useState(false);
 
   const cats    = ["push","pull","legs","upper","lower","full body"];
   const muscles = ["chest","back","shoulders","arms","legs","core"];
   const equips  = ["barbell","dumbbell","cable","machine","bodyweight"];
 
-  const save = () => {
-    if (!name.trim()) return;
-    const ex = { id:"c_"+uid(), name:name.trim(), category, muscleGroup, equipment, similarExercises:[], custom:true };
-    storage.saveCustomExercise(ex);
-    onSave(ex);
+  const save = async () => {
+    if (saving || !name.trim()) return;
+    setSaving(true);
+    try {
+      const ex = { id:"c_"+uid(), name:name.trim(), category, muscleGroup, equipment, similarExercises:[], custom:true };
+      await storage.saveCustomExercise(ex);
+      onSave(ex);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -36,7 +42,7 @@ export function CustomModal({ onSave, onClose }) {
           onClick={()=>setMG(m)}>{m}</button>)}</div>
         <div className="flbl">Equipment</div>
         <div className="chipgrp">{equips.map(e=><button key={e} className={`selchip ${equipment===e?"on":""}`} onClick={()=>setEquip(e)}>{e}</button>)}</div>
-        <button className="creatbtn" onClick={save}>Create Exercise</button>
+        <button className="creatbtn" onClick={save} disabled={saving}>{saving ? 'Creating…' : 'Create Exercise'}</button>
         <button className="cancbtn" onClick={onClose}>Cancel</button>
       </div>
     </div>
